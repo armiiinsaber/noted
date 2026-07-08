@@ -133,10 +133,13 @@
   }
   .tBtn:hover{border-color:var(--line-strong)}
   .tBtn:active{background:var(--surface)}
+  /* Transport play/pause reads as a neutral control — pausing here does NOT
+     start the mic. The accent-colored pill below is the talk action. */
   #playBtn{
-    width:76px;height:76px;font-size:22px;border-color:var(--accent);color:var(--accent);
+    width:76px;height:76px;font-size:22px;
+    border-color:var(--line-strong);color:var(--ink);
   }
-  #playBtn:hover{border-color:var(--accent-strong);color:var(--accent-strong)}
+  #playBtn:hover{border-color:var(--ink);color:var(--ink)}
   .rateRow{display:flex;justify-content:center;gap:6px;margin-bottom:22px}
   .rateChip{
     font-family:var(--mono);font-size:10px;letter-spacing:.16em;
@@ -643,6 +646,7 @@ let pinTs=0, liveText='';
 let sr=null, srExpectedEnd=false;
 let memoRec=null, memoStream=null, memoChunks=[], usingMemo=false, pendingCommit=false;
 let fillingFlagId=null;   // when set, endListening fills that note instead of creating one
+let quietPause=false;     // transport button set: pause without opening the mic
 
 function onAudioPlay(){
   hasPlayedOnce=true;
@@ -660,9 +664,20 @@ function onAudioPause(){
   if(!hasPlayedOnce){ uiPlayState(); return; }
   if(listenState==='listening'){ uiPlayState(); return; }
 
-  // Lock-screen / backgrounded pause: mic is forbidden — save a flagged bookmark
+  // Lock-screen / backgrounded pause: mic is forbidden — save a flagged bookmark.
+  // Precedence over quietPause: if the user hit the transport button and then
+  // the app went hidden before the event fired, we still want the bookmark
+  // rather than silently swallowing it.
   if(document.visibilityState==='hidden'){
     saveFlaggedNote(Math.max(0,curTime()-REWIND));
+    quietPause=false;
+    uiPlayState();
+    return;
+  }
+
+  // Transport-button pause: quiet, no mic, no overlay
+  if(quietPause){
+    quietPause=false;
     uiPlayState();
     return;
   }
@@ -914,6 +929,7 @@ async function handleFile(f){
     makeAudioEl(f);
     hasPlayedOnce=false;
     fillingFlagId=null;
+    quietPause=false;
 
     notes=[];markers=[];
     $('emptyState').style.display='none';
@@ -966,7 +982,16 @@ $('wave').addEventListener('pointerdown',e=>{
 window.addEventListener('resize',()=>{drawWave();layoutPins();});
 
 /* ================= TRANSPORT ================= */
-$('playBtn').onclick=()=>{ isPlaying()?pauseAudio():play(); };
+// Screen play/pause is QUIET: pausing here does not start the mic. Only
+// headphone/MediaSession pauses and the Drop-a-note button enter listening.
+$('playBtn').onclick=()=>{
+  if(isPlaying()){
+    quietPause=true;
+    pauseAudio();
+  } else {
+    play();
+  }
+};
 $('back10').onclick=()=>seek(curTime()-10);
 $('fwd10').onclick=()=>seek(curTime()+10);
 document.querySelectorAll('.rateChip').forEach(b=>b.onclick=()=>{
