@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MIXRIDE">
+<meta name="apple-mobile-web-app-title" content="NOTED">
 <meta name="theme-color" content="#080808">
-<title>MIXRIDE — Melomaniac Labs</title>
+<title>NOTED — Melomaniac Labs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@
     overscroll-behavior:none;
     padding-bottom:env(safe-area-inset-bottom);
   }
-  p,h1,.hint,.emptyNotes,.micNote,.eyebrow{text-wrap:balance}
+  p,h1,.hint,.emptyNotes,.micNote,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
 
   header{
     display:flex;align-items:flex-start;justify-content:space-between;
@@ -215,17 +215,86 @@
   }
   .emptyNotes b{color:var(--accent);font-weight:400}
 
-  /* ---------- capture sheet ---------- */
+  /* ---------- listening overlay (pause-to-talk) ---------- */
+  #listenOverlay{
+    position:fixed;inset:0;z-index:60;
+    background:radial-gradient(ellipse 90% 60% at 50% 38%,rgba(var(--accent-rgb),.09) 0%,var(--bg) 60%),var(--bg);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 24px calc(30px + env(safe-area-inset-bottom));
+    animation:fadeIn .18s ease-out;
+  }
+  #listenOverlay.on{display:flex}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .lo-eyebrow{
+    font-family:var(--mono);font-size:10px;letter-spacing:.44em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:24px;
+  }
+  .lo-eyebrow .live{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--accent);margin-right:.7em;vertical-align:1px;
+    box-shadow:0 0 8px rgba(var(--accent-rgb),.6);
+    animation:blip 1.1s ease-in-out infinite;
+  }
+  @keyframes blip{50%{opacity:.25}}
+  .lo-ts{
+    font-family:var(--mono);font-size:56px;font-weight:400;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;
+    color:var(--ink);line-height:1;margin-bottom:8px;
+  }
+  .lo-section{
+    font-family:var(--mono);font-size:10px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--accent);height:14px;margin-bottom:34px;
+  }
+  .lo-mic{
+    width:132px;height:132px;border-radius:50%;
+    background:var(--accent);color:#080808;
+    display:flex;align-items:center;justify-content:center;
+    font-size:44px;box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5);
+    margin-bottom:30px;
+  }
+  @media (prefers-reduced-motion:no-preference){
+    #listenOverlay.on .lo-mic{animation:pulse2 1.6s ease-out infinite}
+    @keyframes pulse2{
+      0%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5)}
+      100%{box-shadow:0 0 0 34px rgba(var(--accent-rgb),0)}
+    }
+  }
+  .lo-transcript{
+    font-family:var(--mono);font-size:17px;line-height:1.55;color:var(--ink);
+    letter-spacing:.01em;text-align:center;max-width:520px;min-height:52px;
+    margin-bottom:32px;
+  }
+  .lo-transcript:empty::before{content:'…';color:var(--muted)}
+  .lo-transcript.dim{color:var(--muted)}
+  .lo-hint{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--muted);
+    text-align:center;line-height:1.9;margin-bottom:22px;max-width:420px;
+  }
+  .lo-save{
+    background:var(--accent);color:#080808;border:none;
+    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.28em;
+    text-transform:uppercase;padding:16px 36px;border-radius:999px;cursor:pointer;
+    transition:background .2s;
+  }
+  .lo-save:hover{background:var(--accent-strong)}
+  .lo-save:active{transform:scale(.98)}
+
+  /* ---------- edit sheet ---------- */
   #sheetBack{
-    position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;z-index:40;
+    position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;z-index:70;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   }
   #sheet{
-    position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;
+    position:fixed;left:0;right:0;bottom:0;z-index:80;display:none;
     background:var(--surface);border-top:1px solid var(--line);
     border-radius:16px 16px 0 0;
     padding:18px 20px calc(20px + env(safe-area-inset-bottom));
     max-height:88vh;overflow-y:auto;
+  }
+  .sheetHead{
+    font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--muted);text-align:center;margin-bottom:14px;
   }
   .sheetTs{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px}
   .sheetTs .big{
@@ -238,65 +307,17 @@
     letter-spacing:.08em;cursor:pointer;
   }
   .nudge:hover{border-color:var(--line-strong)}
-
-  /* voice capture */
-  #voiceZone{text-align:center;margin-bottom:14px}
-  #micCircle{
-    width:108px;height:108px;border-radius:50%;border:none;cursor:pointer;
-    background:var(--accent);color:#080808;font-size:36px;
-    display:inline-flex;align-items:center;justify-content:center;
-    box-shadow:0 0 0 0 rgba(var(--accent-rgb),.45);
-  }
-  @media (prefers-reduced-motion:no-preference){
-    #micCircle.live{animation:pulse 1.6s ease-out infinite}
-    @keyframes pulse{
-      0%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5)}
-      100%{box-shadow:0 0 0 26px rgba(var(--accent-rgb),0)}
-    }
-  }
-  #micState{
-    font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--ink);margin-top:14px;
-  }
-  #micDevice{
-    font-size:10px;color:var(--muted);font-family:var(--mono);
-    letter-spacing:.12em;margin-top:4px;min-height:14px;
-  }
-  #transcript{
-    min-height:24px;font-size:15px;line-height:1.6;color:var(--ink);
-    padding:10px 6px;margin-top:6px;letter-spacing:.02em;
-  }
-  #transcript:empty::before{content:'…';color:var(--muted)}
-  .micNote{
-    font-size:10px;color:var(--muted);line-height:1.7;margin-top:10px;
-    letter-spacing:.12em;text-transform:uppercase;
-  }
-
-  #blockedBanner{
-    display:none;background:var(--bg);border:1px solid rgba(var(--accent-rgb),.45);
-    border-radius:var(--radius);padding:12px 14px;font-size:11.5px;line-height:1.7;
-    color:var(--ink);margin-bottom:14px;text-wrap:balance;letter-spacing:.03em;
-  }
-  #blockedBanner b{color:var(--accent);font-weight:400}
-
-  .tagRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+  .tagRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
   .tagChip{
     font-size:10px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;
     padding:7px 12px;border-radius:999px;border:1px solid var(--line);
     background:none;color:var(--muted);cursor:pointer;
   }
   .tagChip.on{border-color:var(--accent);color:var(--accent)}
-
-  #typeToggle{
-    display:block;margin:0 auto 10px;background:none;border:none;color:var(--muted);
-    font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
-    text-decoration:underline;text-underline-offset:4px;cursor:pointer;
-  }
-  #typeToggle:hover{color:var(--ink)}
   #noteText{
-    display:none;width:100%;min-height:84px;background:var(--bg);border:1px solid var(--line);
+    display:block;width:100%;min-height:96px;background:var(--bg);border:1px solid var(--line);
     border-radius:var(--radius);color:var(--ink);font-size:15px;padding:12px;
-    font-family:var(--mono);resize:none;margin-bottom:10px;letter-spacing:.02em;
+    font-family:var(--mono);resize:none;margin-bottom:14px;letter-spacing:.02em;
   }
   #noteText:focus{outline:none;border-color:var(--accent)}
   .sheetActions{display:flex;gap:10px}
@@ -311,11 +332,6 @@
     font-weight:500;letter-spacing:.28em;text-transform:uppercase;cursor:pointer;
   }
   .sheetActions .save:hover{background:var(--accent-strong)}
-  .resumeRow{
-    display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;
-    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--muted);
-  }
 
   #toast{
     position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99;
@@ -330,7 +346,7 @@
 <header>
   <div class="brand">
     <div class="eyebrow">03 · Melomaniac Labs</div>
-    <div class="logo">MIXRIDE</div>
+    <div class="logo">NOTED</div>
   </div>
   <div class="tagline">Talk to your mix.</div>
 </header>
@@ -382,36 +398,30 @@
 
 <button id="noteBtn"><span class="dot"></span>Drop a note</button>
 
+<!-- Full-screen pause-to-talk state -->
+<div id="listenOverlay">
+  <div class="lo-eyebrow"><span class="live"></span>Paused · Listening</div>
+  <div class="lo-ts" id="loTs">0:00</div>
+  <div class="lo-section" id="loSection"></div>
+  <div class="lo-mic">🎙</div>
+  <div class="lo-transcript" id="loTranscript"></div>
+  <div class="lo-hint">Press play on your headphones to save · Silence saves nothing</div>
+  <button class="lo-save" id="loSave">▶ Save &amp; continue</button>
+</div>
+
 <div id="sheetBack"></div>
 <div id="sheet">
+  <div class="sheetHead">Edit note</div>
   <div class="sheetTs">
     <button class="nudge" id="tsMinus">−1s</button>
     <span class="big" id="sheetTime">0:00</span>
     <button class="nudge" id="tsPlus">+1s</button>
   </div>
-
-  <div id="blockedBanner">
-    <b>Mic access denied.</b> Voice capture needs microphone permission — check your Safari site settings and allow the mic for this page. For now, type your note below.
-  </div>
-
-  <div id="voiceZone">
-    <button id="micCircle">🎙</button>
-    <div id="micState">Listening — just talk</div>
-    <div id="micDevice"></div>
-    <div id="transcript"></div>
-    <div class="micNote">Tap the circle when you're done. The mix stays paused while you speak.</div>
-  </div>
-
   <div class="tagRow" id="tagRow"></div>
-  <button id="typeToggle">Edit as text</button>
-  <textarea id="noteText" placeholder="bring vocal up 1dB, snare too bright, cut the pad here…"></textarea>
+  <textarea id="noteText" placeholder="edit this note…"></textarea>
   <div class="sheetActions">
     <button class="cancel" id="cancelNote">Cancel</button>
-    <button class="save" id="saveNote">Save note</button>
-  </div>
-  <div class="resumeRow">
-    <input type="checkbox" id="resumeChk" checked>
-    <label for="resumeChk">Resume playback after saving</label>
+    <button class="save" id="saveNote">Save</button>
   </div>
 </div>
 
@@ -421,103 +431,300 @@
 const $=id=>document.getElementById(id);
 const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this'];
 const REWIND=3;
+const STORAGE_PREFIX='noted:';
+const LEGACY_PREFIX='mixride:';
 
-let fileName='', dur=0, peaks=null;
-let notes=[], markers=[], editingId=null, sheetTs=0, pickedTags=new Set();
-let storageOK=true;
+/* ========== storage: migrate legacy mixride:* keys → noted:* ========== */
+(function migrateLegacy(){
+  try{
+    const toMove=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && k.startsWith(LEGACY_PREFIX)) toMove.push(k);
+    }
+    for(const k of toMove){
+      const nk=STORAGE_PREFIX+k.slice(LEGACY_PREFIX.length);
+      if(localStorage.getItem(nk)==null) localStorage.setItem(nk,localStorage.getItem(k));
+      localStorage.removeItem(k);
+    }
+  }catch(e){}
+})();
 
-/* ================= WEB AUDIO PLAYER ================= */
-let actx=null, buffer=null, srcNode=null, playing=false, offset=0, startedAt=0, rate=1;
+let fileName='',dur=0,peaks=null;
+let notes=[],markers=[],editingId=null,sheetTs=0,pickedTags=new Set();
 
-function ensureCtx(){
-  if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();
-  if(actx.state==='suspended')actx.resume();
-  return actx;
-}
-function curTime(){
-  if(!buffer)return 0;
-  if(!playing)return offset;
-  return Math.min(dur,offset+(actx.currentTime-startedAt)*rate);
-}
-function stopNode(){
-  if(srcNode){srcNode.onended=null;try{srcNode.stop();}catch(e){}srcNode=null;}
-}
-function play(){
-  if(!buffer||playing)return;
-  ensureCtx();
-  if(offset>=dur-0.05)offset=0;
-  srcNode=actx.createBufferSource();
-  srcNode.buffer=buffer;
-  srcNode.playbackRate.value=rate;
-  srcNode.connect(actx.destination);
-  const me=srcNode;
-  srcNode.onended=()=>{ if(srcNode===me&&playing){playing=false;offset=dur;srcNode=null;uiPlayState();} };
-  startedAt=actx.currentTime;
-  srcNode.start(0,offset);
-  playing=true;
-  uiPlayState();
-}
-function pause(){
-  if(!playing)return;
-  offset=curTime();
-  playing=false;
-  stopNode();
-  uiPlayState();
-}
-function seek(t){
-  const was=playing;
-  if(playing){offset=curTime();playing=false;stopNode();}
-  offset=Math.max(0,Math.min(dur,t));
-  if(was)play();else uiPlayState();
-}
-function setRate(r){
-  const was=playing;
-  if(playing){offset=curTime();playing=false;stopNode();}
-  rate=r;
-  if(was)play();
-}
-function uiPlayState(){
-  $('playBtn').textContent=playing?'❚❚':'▶';
-  $('noteBtn').classList.toggle('playing',playing);
-}
+/* ================= AUDIO ENGINE =================
+   Playback: <audio> element with blob URL (drives MediaSession).
+   Web Audio is used ONLY to decode peaks for the waveform. */
+let audioEl=null,blobUrl=null,decodeCtx=null,rate=1,hasPlayedOnce=false;
 
-/* ---------- helpers ---------- */
-function fmt(t,dec){t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;
+function fmt(t,dec){t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;
   return dec?`${m}:${s.toFixed(1).padStart(4,'0')}`:`${m}:${String(Math.floor(s)).padStart(2,'0')}`;}
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';
-  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2800);}
-function storageKey(){return 'mixride:'+fileName.replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600);}
+function storageKey(){return STORAGE_PREFIX+fileName.replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
 
-async function loadSaved(){
-  if(!window.storage){storageOK=false;return;}
-  try{const r=await window.storage.get(storageKey());
-    if(r&&r.value){const d=JSON.parse(r.value);notes=d.notes||[];markers=d.markers||[];
-      if(notes.length)toast(`${notes.length} note${notes.length>1?'s':''} restored for this track`);}
-  }catch(e){/* nothing saved yet */}
+function loadSaved(){
+  try{
+    const raw=localStorage.getItem(storageKey());
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    notes=d.notes||[];markers=d.markers||[];
+    if(notes.length)toast(`${notes.length} note${notes.length>1?'s':''} restored`);
+  }catch(e){}
 }
-async function persist(){
-  if(!storageOK||!window.storage)return;
+function persist(){
   try{
     const slim=notes.map(n=>({id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done}));
-    await window.storage.set(storageKey(),JSON.stringify({notes:slim,markers}));
-  }catch(e){storageOK=false;}
+    localStorage.setItem(storageKey(),JSON.stringify({notes:slim,markers}));
+  }catch(e){}
 }
 
-/* ---------- file load ---------- */
+function makeAudioEl(file){
+  if(audioEl){
+    try{audioEl.pause();}catch(e){}
+    audioEl.removeAttribute('src');
+    audioEl.load();
+  }
+  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+  blobUrl=URL.createObjectURL(file);
+  audioEl=new Audio();
+  audioEl.src=blobUrl;
+  audioEl.preload='auto';
+  audioEl.playbackRate=rate;
+  audioEl.addEventListener('play',onAudioPlay);
+  audioEl.addEventListener('pause',onAudioPause);
+  audioEl.addEventListener('ended',onAudioEnded);
+  audioEl.addEventListener('loadedmetadata',()=>{
+    if(isFinite(audioEl.duration)&&audioEl.duration>0){
+      dur=audioEl.duration;
+      $('tcTotal').textContent='/ '+fmt(dur);
+      layoutPins();
+    }
+  });
+}
+
+function play(){ if(!audioEl)return; audioEl.play().catch(()=>{}); }
+function pauseAudio(){ if(!audioEl||audioEl.paused)return; try{audioEl.pause();}catch(e){} }
+function seek(t){
+  if(!audioEl||!isFinite(dur))return;
+  audioEl.currentTime=Math.max(0,Math.min(dur,t));
+}
+function setRate(r){ rate=r; if(audioEl)audioEl.playbackRate=r; }
+function curTime(){ return audioEl?audioEl.currentTime||0:0; }
+function isPlaying(){ return !!(audioEl && !audioEl.paused && !audioEl.ended); }
+
+function uiPlayState(){
+  $('playBtn').textContent=isPlaying()?'❚❚':'▶';
+  $('noteBtn').classList.toggle('playing',isPlaying());
+}
+
+/* ---------- MediaSession (headphone buttons) ---------- */
+function setupMediaSession(){
+  if(!('mediaSession' in navigator))return;
+  try{
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:fileName||'NOTED',
+      artist:'NOTED',
+      album:'Melomaniac Labs'
+    });
+    navigator.mediaSession.setActionHandler('play',()=>play());
+    navigator.mediaSession.setActionHandler('pause',()=>pauseAudio());
+    navigator.mediaSession.setActionHandler('seekbackward',e=>seek(curTime()-((e&&e.seekOffset)||10)));
+    navigator.mediaSession.setActionHandler('seekforward',e=>seek(curTime()+((e&&e.seekOffset)||10)));
+  }catch(e){}
+}
+
+/* ================= PAUSE-TO-TALK STATE MACHINE ================= */
+let listenState='idle';   // 'idle' | 'listening'
+let pinTs=0, liveText='';
+let sr=null, srExpectedEnd=false;
+let memoRec=null, memoStream=null, memoChunks=[], usingMemo=false, pendingCommit=false;
+
+function onAudioPlay(){
+  hasPlayedOnce=true;
+  if(listenState==='listening'){
+    endListening({commit:true});
+  }
+  uiPlayState();
+}
+
+function onAudioPause(){
+  if(!hasPlayedOnce){ uiPlayState(); return; }
+  if(listenState!=='listening'){ beginListening(); }
+  uiPlayState();
+}
+
+function onAudioEnded(){
+  if(listenState==='listening') endListening({commit:true});
+  uiPlayState();
+}
+
+function beginListening(){
+  listenState='listening';
+  pinTs=Math.max(0,curTime()-REWIND);
+  liveText='';
+  usingMemo=false;
+  memoChunks=[];
+  pendingCommit=false;
+  $('loTs').textContent=fmt(pinTs);
+  $('loSection').textContent=sectionAt(pinTs)||'';
+  const tr=$('loTranscript');
+  tr.textContent='';
+  tr.classList.remove('dim');
+  $('listenOverlay').classList.add('on');
+  startSR();
+}
+
+function endListening({commit}){
+  if(listenState!=='listening')return;
+  listenState='idle';
+  $('listenOverlay').classList.remove('on');
+  // Recognition path: synchronous save
+  if(!usingMemo){
+    stopSR();
+    if(commit && liveText.trim().length){
+      saveVoiceNote(pinTs, liveText.trim(), null);
+    }
+    liveText='';
+    return;
+  }
+  // Memo fallback: blob arrives async in onstop — decide there
+  pendingCommit=!!commit;
+  stopMemo();
+}
+
+function saveVoiceNote(t, text, memoBlob){
+  const n={
+    id:Date.now()+''+Math.random().toString(16).slice(2,6),
+    t, text, tags:[], section:sectionAt(t), done:false
+  };
+  if(memoBlob) n.memo=URL.createObjectURL(memoBlob);
+  notes.push(n);
+  notes.sort((a,b)=>a.t-b.t);
+  persist();renderNotes();layoutPins();
+  toast('Saved at '+fmt(t));
+}
+
+/* ---------- SpeechRecognition (primary) ---------- */
+function startSR(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ startMemo(); return; }
+  try{
+    sr=new SR();
+    sr.lang='en-US';
+    sr.interimResults=true;
+    sr.continuous=true;
+    srExpectedEnd=false;
+    sr.onresult=e=>{
+      let fin='',inter='';
+      for(let i=0;i<e.results.length;i++){
+        if(e.results[i].isFinal) fin+=e.results[i][0].transcript;
+        else inter+=e.results[i][0].transcript;
+      }
+      liveText=(fin+' '+inter).replace(/\s+/g,' ').trim();
+      $('loTranscript').textContent=liveText;
+    };
+    sr.onerror=ev=>{
+      if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
+        srExpectedEnd=true;
+        stopSR();
+        startMemo();
+      }
+    };
+    sr.onend=()=>{
+      // iOS often ends the session early — restart while still listening
+      if(!srExpectedEnd && listenState==='listening'){
+        try{ sr.start(); }catch(e){/* another start in flight; ignore */}
+      }
+    };
+    sr.start();
+  }catch(e){
+    startMemo();
+  }
+}
+function stopSR(){
+  if(sr){
+    srExpectedEnd=true;
+    try{sr.onresult=null;sr.onerror=null;sr.onend=null;sr.stop();}catch(e){}
+    sr=null;
+  }
+}
+
+/* ---------- MediaRecorder memo (fallback for browsers w/o SR) ---------- */
+let memoAborted=false;
+async function startMemo(){
+  usingMemo=true;
+  memoAborted=false;
+  const tr=$('loTranscript');
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    if(memoAborted){ stream.getTracks().forEach(t=>t.stop()); return; }
+    memoStream=stream;
+    memoChunks=[];
+    memoRec=new MediaRecorder(memoStream);
+    memoRec.ondataavailable=e=>{ if(e.data.size) memoChunks.push(e.data); };
+    memoRec.onstop=()=>{
+      const blob=new Blob(memoChunks,{type:memoRec.mimeType||'audio/webm'});
+      if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
+      memoRec=null;
+      if(pendingCommit && blob.size>0) saveVoiceNote(pinTs, '', blob);
+      memoChunks=[]; pendingCommit=false;
+    };
+    memoRec.start();
+    tr.textContent='Recording voice memo';
+    tr.classList.add('dim');
+  }catch(e){
+    usingMemo=false;
+    tr.textContent='Mic access denied — check Safari site settings';
+    tr.classList.add('dim');
+  }
+}
+function stopMemo(){
+  memoAborted=true;
+  if(memoRec && memoRec.state!=='inactive'){
+    try{ memoRec.stop(); }catch(e){}
+    return;
+  }
+  // Not recording yet (still awaiting getUserMedia or mic denied) — clean up
+  if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
+  pendingCommit=false;
+}
+
+/* ---------- overlay's save button (on-screen backup for play) ---------- */
+$('loSave').onclick=()=>play();
+
+/* ================= FILE LOAD ================= */
 async function handleFile(f){
   if(!f)return;
   $('loadStatus').textContent='Decoding audio…';
   try{
-    pause();
+    if(isPlaying()) pauseAudio();
+    if(listenState==='listening'){
+      // Discard any in-flight listening (rare: user swaps files while paused)
+      $('listenOverlay').classList.remove('on');
+      stopSR(); stopMemo();
+      listenState='idle';
+    }
     fileName=f.name;
+
+    // Peaks via AudioContext (decode only, no playback)
+    if(!decodeCtx) decodeCtx=new (window.AudioContext||window.webkitAudioContext)();
     const arr=await f.arrayBuffer();
-    ensureCtx();
-    buffer=await actx.decodeAudioData(arr);
-    dur=buffer.duration;
-    offset=0;playing=false;
-    const ch=buffer.getChannelData(0), N=460, step=Math.max(1,Math.floor(ch.length/N));
+    const buf=await decodeCtx.decodeAudioData(arr);
+    const ch=buf.getChannelData(0), N=460, step=Math.max(1,Math.floor(ch.length/N));
     peaks=new Float32Array(N);
-    for(let i=0;i<N;i++){let m=0;for(let j=0;j<step;j+=16){const v=Math.abs(ch[i*step+j]||0);if(v>m)m=v;}peaks[i]=m;}
+    for(let i=0;i<N;i++){
+      let m=0;
+      for(let j=0;j<step;j+=16){ const v=Math.abs(ch[i*step+j]||0); if(v>m) m=v; }
+      peaks[i]=m;
+    }
+    dur=buf.duration;
+
+    // Playback via <audio> element (drives MediaSession)
+    makeAudioEl(f);
+    hasPlayedOnce=false;
+
     notes=[];markers=[];
     $('emptyState').style.display='none';
     $('session').style.display='block';
@@ -525,7 +732,8 @@ async function handleFile(f){
     $('trackName').textContent=fileName;
     $('tcTotal').textContent='/ '+fmt(dur);
     $('loadStatus').textContent='';
-    await loadSaved();
+    loadSaved();
+    setupMediaSession();
     renderNotes();drawWave();layoutPins();uiPlayState();
   }catch(e){
     $('loadStatus').textContent='';
@@ -535,10 +743,11 @@ async function handleFile(f){
 $('fileInput').addEventListener('change',e=>handleFile(e.target.files[0]));
 $('fileInput2').addEventListener('change',e=>handleFile(e.target.files[0]));
 
-/* ---------- waveform ---------- */
+/* ================= WAVEFORM ================= */
 function drawWave(){
   const c=$('wave'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;
-  if(!w)return; c.width=w*dpr;c.height=h*dpr;
+  if(!w)return;
+  c.width=w*dpr;c.height=h*dpr;
   const g=c.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,w,h);
   const prog=dur?curTime()/dur:0;
   const N=peaks?peaks.length:120;
@@ -554,16 +763,19 @@ function drawWave(){
 function seekFromX(clientX){
   const r=$('wave').getBoundingClientRect();
   const f=Math.min(1,Math.max(0,(clientX-r.left)/r.width));
-  if(dur)seek(f*dur);
+  if(dur) seek(f*dur);
 }
-$('wave').addEventListener('pointerdown',e=>{seekFromX(e.clientX);
+$('wave').addEventListener('pointerdown',e=>{
+  seekFromX(e.clientX);
   const mv=ev=>seekFromX(ev.clientX);
   const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);};
-  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);});
+  window.addEventListener('pointermove',mv);
+  window.addEventListener('pointerup',up);
+});
 window.addEventListener('resize',()=>{drawWave();layoutPins();});
 
-/* ---------- transport ---------- */
-$('playBtn').onclick=()=>{playing?pause():play();};
+/* ================= TRANSPORT ================= */
+$('playBtn').onclick=()=>{ isPlaying()?pauseAudio():play(); };
 $('back10').onclick=()=>seek(curTime()-10);
 $('fwd10').onclick=()=>seek(curTime()+10);
 document.querySelectorAll('.rateChip').forEach(b=>b.onclick=()=>{
@@ -572,29 +784,42 @@ document.querySelectorAll('.rateChip').forEach(b=>b.onclick=()=>{
 });
 
 function tick(){
-  $('tcNow').textContent=fmt(curTime(),true);
-  $('sectionNow').textContent=sectionAt(curTime())||'';
+  const t=curTime();
+  $('tcNow').textContent=fmt(t,true);
+  $('sectionNow').textContent=sectionAt(t)||'';
   drawWave();
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
 
-/* ---------- markers ---------- */
+/* ================= MARKERS ================= */
 function sectionAt(t){
   let best=null;
-  for(const m of markers)if(m.t<=t&&(!best||m.t>best.t))best=m;
+  for(const m of markers) if(m.t<=t && (!best||m.t>best.t)) best=m;
   return best?best.name:null;
 }
 $('markerBtn').onclick=()=>{
-  const was=playing; pause();
+  const was=isPlaying(); if(was) pauseAudio();
   const t=curTime();
   const name=prompt('Name this section (Chorus 2, Bridge, Drop…):');
-  if(name&&name.trim()){markers.push({t,name:name.trim()});
-    markers.sort((a,b)=>a.t-b.t);persist();layoutPins();toast(`“${name.trim()}” marked at ${fmt(t)}`);}
-  if(was)play();
+  if(name && name.trim()){
+    markers.push({t,name:name.trim()});
+    markers.sort((a,b)=>a.t-b.t);
+    persist();layoutPins();
+    toast(`"${name.trim()}" marked at ${fmt(t)}`);
+  }
+  // If we paused for the prompt while listening flow would've started, discard it —
+  // the prompt is an in-session dialog, not a note capture.
+  if(listenState==='listening'){
+    stopSR();stopMemo();
+    listenState='idle';
+    $('listenOverlay').classList.remove('on');
+    liveText='';
+  }
+  if(was) play();
 };
 
-/* ---------- pins ---------- */
+/* ================= PINS ================= */
 function layoutPins(){
   const layer=$('pinLayer');layer.innerHTML='';
   if(!dur)return;
@@ -614,171 +839,71 @@ function layoutPins(){
   }
 }
 
-/* ================= VOICE CAPTURE =================
-   Priority: SpeechRecognition (live transcript).
-   Fallback: MediaRecorder voice memo.
-   If the environment blocks the mic entirely, show the
-   banner and reveal the text box. */
-let micBlocked=false, listening=false, rec=null, mediaRec=null, mediaStream=null, memoBlob=null, memoUrl=null;
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-
-async function showMicDevice(){
-  try{
-    const devs=await navigator.mediaDevices.enumerateDevices();
-    const inp=devs.find(d=>d.kind==='audioinput'&&d.label);
-    $('micDevice').textContent=inp?('mic: '+inp.label.toLowerCase()):'';
-  }catch(e){$('micDevice').textContent='';}
-}
-
-function voiceUI(state){
-  // state: 'live' | 'stopped' | 'blocked' | 'editing'
-  const zone=$('voiceZone'), circ=$('micCircle');
-  if(state==='blocked'){
-    zone.style.display='none';
-    $('blockedBanner').style.display='block';
-    $('noteText').style.display='block';
-    $('typeToggle').style.display='none';
-    return;
+/* ================= DROP-A-NOTE BUTTON (on-screen backup) ================= */
+$('noteBtn').onclick=()=>{
+  if(!audioEl)return;
+  if(!audioEl.paused){
+    pauseAudio();   // fires 'pause' → onAudioPause → beginListening
+  } else if(listenState!=='listening'){
+    if(!hasPlayedOnce) hasPlayedOnce=true;
+    beginListening();
   }
-  zone.style.display='block';
-  $('blockedBanner').style.display='none';
-  if(state==='live'){
-    circ.classList.add('live');circ.textContent='■';
-    $('micState').textContent='Listening — just talk';
-  }else{
-    circ.classList.remove('live');circ.textContent='🎙';
-    $('micState').textContent=state==='editing'?'Tap to re-record':'Tap to talk again';
-  }
-}
+};
 
-async function startVoice(){
-  if(micBlocked){voiceUI('blocked');return;}
-  memoBlob=null;
-  // Try SpeechRecognition first
-  if(SR){
-    try{
-      rec=new SR();rec.lang='en-US';rec.interimResults=true;rec.continuous=true;
-      let base=$('transcript').textContent?$('transcript').textContent+' ':'';
-      rec.onresult=e=>{
-        let fin='',inter='';
-        for(let i=0;i<e.results.length;i++){
-          if(e.results[i].isFinal)fin+=e.results[i][0].transcript;
-          else inter+=e.results[i][0].transcript;
-        }
-        $('transcript').textContent=(base+fin+inter).trim();
-      };
-      rec.onerror=ev=>{
-        if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
-          micBlocked=true;stopVoice();voiceUI('blocked');
-        }else{stopVoice();}
-      };
-      rec.onend=()=>{if(listening){listening=false;voiceUI('stopped');}};
-      rec.start();
-      listening=true;voiceUI('live');showMicDevice();
-      return;
-    }catch(e){/* fall through to recorder */}
-  }
-  // Fallback: record a voice memo
-  try{
-    mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
-    const chunks=[];
-    mediaRec=new MediaRecorder(mediaStream);
-    mediaRec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-    mediaRec.onstop=()=>{
-      memoBlob=new Blob(chunks,{type:mediaRec.mimeType||'audio/mp4'});
-      $('micState').textContent='Voice memo saved with this note';
-    };
-    mediaRec.start();
-    listening=true;voiceUI('live');showMicDevice();
-    $('micState').textContent='Recording memo — just talk';
-  }catch(e){
-    micBlocked=true;voiceUI('blocked');
-  }
-}
-function stopVoice(){
-  listening=false;
-  if(rec){try{rec.stop();}catch(e){}rec=null;}
-  if(mediaRec&&mediaRec.state!=='inactive'){try{mediaRec.stop();}catch(e){}}
-  if(mediaStream){mediaStream.getTracks().forEach(t=>t.stop());mediaStream=null;}
-  voiceUI('stopped');
-}
-$('micCircle').onclick=()=>{listening?stopVoice():startVoice();};
-
-/* ---------- note capture ---------- */
+/* ================= EDIT SHEET (existing notes only) ================= */
 function buildTagRow(){
   const row=$('tagRow');row.innerHTML='';
   for(const t of TAGS){
     const b=document.createElement('button');
     b.className='tagChip'+(pickedTags.has(t)?' on':'');b.textContent=t;
-    b.onclick=()=>{pickedTags.has(t)?pickedTags.delete(t):pickedTags.add(t);b.classList.toggle('on');};
+    b.onclick=()=>{
+      pickedTags.has(t)?pickedTags.delete(t):pickedTags.add(t);
+      b.classList.toggle('on');
+    };
     row.appendChild(b);
   }
 }
-function openSheet(ts,existing){
-  sheetTs=ts;
-  pickedTags=new Set(existing?existing.tags:[]);
-  editingId=existing?existing.id:null;
+function openSheet(n){
+  editingId=n.id;
+  sheetTs=n.t;
+  pickedTags=new Set(n.tags||[]);
   $('sheetTime').textContent=fmt(sheetTs);
-  $('transcript').textContent=existing?(existing.text||''):'';
-  $('noteText').value=existing?(existing.text||''):'';
-  $('noteText').style.display='none';
-  $('typeToggle').style.display='block';
+  $('noteText').value=n.text||'';
   buildTagRow();
-  $('sheetBack').style.display='block';$('sheet').style.display='block';
-  if(existing){voiceUI('editing');}
-  else startVoice();        // talk-first: mic starts the moment the sheet opens
+  $('sheetBack').style.display='block';
+  $('sheet').style.display='block';
 }
 function closeSheet(){
-  stopVoice();
-  $('sheetBack').style.display='none';$('sheet').style.display='none';
-  editingId=null;memoBlob=null;
+  $('sheetBack').style.display='none';
+  $('sheet').style.display='none';
+  editingId=null;
 }
-$('noteBtn').onclick=()=>{
-  const was=playing;
-  pause();
-  $('resumeChk').checked=was;
-  openSheet(Math.max(0,curTime()-REWIND));
-};
 $('tsMinus').onclick=()=>{sheetTs=Math.max(0,sheetTs-1);$('sheetTime').textContent=fmt(sheetTs);};
-$('tsPlus').onclick=()=>{sheetTs=Math.min(dur,sheetTs+1);$('sheetTime').textContent=fmt(sheetTs);};
+$('tsPlus').onclick=()=>{sheetTs=Math.min(dur||sheetTs+1,sheetTs+1);$('sheetTime').textContent=fmt(sheetTs);};
 $('cancelNote').onclick=closeSheet;
 $('sheetBack').onclick=closeSheet;
-$('typeToggle').onclick=()=>{
-  $('noteText').value=$('transcript').textContent;
-  $('noteText').style.display='block';
-  $('typeToggle').style.display='none';
-  $('noteText').focus();
-};
-
 $('saveNote').onclick=()=>{
-  stopVoice();
-  const typed=$('noteText').style.display!=='none';
-  const text=(typed?$('noteText').value:$('transcript').textContent).trim();
-  if(!text&&pickedTags.size===0&&!memoBlob){toast('Say or pick what to change first');return;}
-  if(editingId){
-    const n=notes.find(x=>x.id===editingId);
-    if(n){n.text=text;n.tags=[...pickedTags];n.t=sheetTs;n.section=sectionAt(sheetTs);}
-  }else{
-    const n={id:Date.now()+''+Math.random().toString(16).slice(2,6),
-      t:sheetTs,text,tags:[...pickedTags],section:sectionAt(sheetTs),done:false};
-    if(memoBlob)n.memo=URL.createObjectURL(memoBlob);
-    notes.push(n);
+  if(!editingId){ closeSheet(); return; }
+  const n=notes.find(x=>x.id===editingId);
+  if(n){
+    n.text=$('noteText').value.trim();
+    n.tags=[...pickedTags];
+    n.t=sheetTs;
+    n.section=sectionAt(sheetTs);
+    notes.sort((a,b)=>a.t-b.t);
+    persist();renderNotes();layoutPins();
+    toast('Updated');
   }
-  notes.sort((a,b)=>a.t-b.t);
-  persist();renderNotes();layoutPins();
-  const resume=$('resumeChk').checked&&!editingId;
   closeSheet();
-  toast('Saved at '+fmt(sheetTs));
-  if(resume)play();
 };
 
-/* ---------- notes list ---------- */
+/* ================= NOTES LIST ================= */
 let memoPlayer=null;
 function renderNotes(){
   const list=$('noteList');list.innerHTML='';
   $('noteCount').textContent=notes.length?`${notes.filter(n=>n.done).length}/${notes.length} fixed`:'';
   if(!notes.length){
-    list.innerHTML='<div class="emptyNotes">No notes yet. Press play, then hit <b>Drop a note</b> and just talk — it pins a few seconds back automatically.</div>';
+    list.innerHTML='<div class="emptyNotes">No notes yet. Press play, then <b>pause on your headphones</b> when something bugs you — the mic starts and pins a note 3 seconds back.</div>';
     return;
   }
   for(const n of notes){
@@ -797,35 +922,40 @@ function renderNotes(){
         <button class="iconBtn edit">✎</button>
         <button class="iconBtn del">✕</button>
       </div>`;
-    if(n.text)d.querySelector('.txt').textContent=n.text;
-    d.querySelector('.ts').onclick=()=>{seek(Math.max(0,n.t-1));if(!playing)play();};
+    if(n.text) d.querySelector('.txt').textContent=n.text;
+    d.querySelector('.ts').onclick=()=>{seek(Math.max(0,n.t-1)); if(!isPlaying()) play();};
     d.querySelector('.checkBtn').onclick=()=>{n.done=!n.done;persist();renderNotes();layoutPins();};
-    d.querySelector('.edit').onclick=()=>openSheet(n.t,n);
+    d.querySelector('.edit').onclick=()=>openSheet(n);
     d.querySelector('.del').onclick=()=>{notes=notes.filter(x=>x.id!==n.id);persist();renderNotes();layoutPins();};
     const mb=d.querySelector('.memoBtn');
-    if(mb)mb.onclick=()=>{
-      pause();
+    if(mb) mb.onclick=()=>{
+      pauseAudio();
       if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
-      memoPlayer=new Audio(n.memo);memoPlayer.play().catch(()=>toast('Could not play memo here'));
+      memoPlayer=new Audio(n.memo);
+      memoPlayer.play().catch(()=>toast('Could not play memo here'));
     };
     list.appendChild(d);
   }
 }
 
-/* ---------- export ---------- */
+/* ================= EXPORT ================= */
 $('exportBtn').onclick=async()=>{
   if(!notes.length){toast('Nothing to export yet');return;}
-  let out=`MIX NOTES — ${fileName}\n${new Date().toLocaleDateString()}\n\n`;
+  let out=`NOTED — ${fileName}\n${new Date().toLocaleDateString()}\n\n`;
   for(const n of notes){
     out+=`${fmt(n.t)}`;
-    if(n.section)out+=` (${n.section})`;
-    if(n.tags.length)out+=` [${n.tags.join(', ')}]`;
+    if(n.section) out+=` (${n.section})`;
+    if(n.tags.length) out+=` [${n.tags.join(', ')}]`;
     out+=` ${n.done?'✓ ':''}— ${n.text||(n.memo?'(voice memo)':'')}\n`;
   }
-  try{await navigator.clipboard.writeText(out);toast('Copied — paste it next to your DAW');}
-  catch(e){
-    const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);
-    ta.select();document.execCommand('copy');ta.remove();toast('Copied to clipboard');
+  try{
+    await navigator.clipboard.writeText(out);
+    toast('Copied — paste it next to your DAW');
+  }catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=out;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();
+    toast('Copied to clipboard');
   }
 };
 </script>
