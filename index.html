@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MIXRIDE">
+<meta name="theme-color" content="#0a0a0a">
+<title>MIXRIDE</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --surface:#161616;
+    --line:#262626;
+    --ink:#ffffff;
+    --muted:#9a9a9a;
+    --orange:#ff6a00;
+    --radius:14px;
+    --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    overscroll-behavior:none;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  p,h1,.hint,.emptyNotes,.micNote{text-wrap:balance}
+
+  header{display:flex;align-items:baseline;justify-content:space-between;padding:20px 20px 8px}
+  .logo{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.3em;color:var(--orange)}
+  .tagline{font-size:11px;color:var(--muted)}
+
+  /* ---------- empty state ---------- */
+  #emptyState{padding:12vh 28px 24px;text-align:center}
+  #emptyState h1{font-size:26px;font-weight:700;margin-bottom:12px;letter-spacing:-.02em}
+  #emptyState p{font-size:15px;color:var(--muted);line-height:1.6;max-width:300px;margin:0 auto 32px}
+  .pickBtn{
+    display:inline-block;background:var(--orange);color:#fff;
+    font-size:16px;font-weight:700;padding:16px 36px;border-radius:999px;cursor:pointer;
+  }
+  .pickBtn:active{transform:scale(.97)}
+  .pickBtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .hint{margin-top:20px;font-size:12px;color:var(--muted);line-height:1.6}
+  #loadStatus{margin-top:18px;font-size:13px;color:var(--orange);min-height:18px}
+
+  /* ---------- session ---------- */
+  #session{display:none;padding:0 16px 150px}
+  .trackName{
+    font-size:13px;color:var(--muted);text-align:center;margin-bottom:8px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px;
+  }
+  .timecode{
+    font-family:var(--mono);font-size:48px;font-weight:600;text-align:center;
+    font-variant-numeric:tabular-nums;line-height:1;
+  }
+  .timecode .total{font-size:14px;color:var(--muted);display:block;margin-top:6px}
+  .sectionNow{
+    text-align:center;font-size:11px;color:var(--orange);letter-spacing:.2em;
+    text-transform:uppercase;height:15px;margin:8px 0 12px;font-family:var(--mono);
+  }
+
+  #waveWrap{position:relative;height:84px;margin:0 2px}
+  #wave{width:100%;height:100%;display:block;touch-action:none}
+  .pin{
+    position:absolute;top:-6px;width:8px;height:8px;margin-left:-4px;border-radius:50%;
+    background:var(--orange);
+  }
+  .pin.done{background:#4a4a4a}
+  .markerFlag{
+    position:absolute;bottom:-18px;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;
+    text-transform:uppercase;white-space:nowrap;
+  }
+
+  .transport{display:flex;align-items:center;justify-content:center;gap:24px;margin:34px 0 10px}
+  .tBtn{
+    background:none;border:1px solid var(--line);color:var(--ink);
+    border-radius:50%;width:54px;height:54px;font-size:13px;font-family:var(--mono);
+    cursor:pointer;font-weight:600;
+  }
+  .tBtn:active{background:var(--surface)}
+  #playBtn{width:76px;height:76px;font-size:26px;border-color:var(--ink)}
+  .rateRow{display:flex;justify-content:center;gap:8px;margin-bottom:22px}
+  .rateChip{
+    font-family:var(--mono);font-size:11px;color:var(--muted);background:none;
+    border:none;border-bottom:2px solid transparent;padding:4px 8px;cursor:pointer;
+  }
+  .rateChip.on{color:var(--orange);border-bottom-color:var(--orange)}
+
+  #noteBtn{
+    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);
+    width:min(420px,calc(100% - 32px));height:62px;border-radius:999px;border:none;
+    background:var(--orange);color:#fff;font-size:17px;font-weight:700;cursor:pointer;
+    display:none;align-items:center;justify-content:center;gap:10px;
+    box-shadow:0 8px 28px rgba(255,106,0,.35);
+  }
+  #noteBtn:active{transform:translateX(-50%) scale(.98)}
+  #noteBtn .dot{width:10px;height:10px;border-radius:50%;background:#fff}
+  @media (prefers-reduced-motion:no-preference){
+    #noteBtn.playing .dot{animation:blink 1.1s steps(2,start) infinite}
+    @keyframes blink{to{visibility:hidden}}
+  }
+
+  .rowBtns{display:flex;gap:10px;margin:4px 0 22px}
+  .ghostBtn{
+    flex:1;background:none;border:1px solid var(--line);color:var(--muted);
+    font-size:13px;padding:12px;border-radius:var(--radius);cursor:pointer;font-weight:600;
+  }
+  .ghostBtn:active{background:var(--surface)}
+
+  /* ---------- notes ---------- */
+  .listHead{display:flex;justify-content:space-between;align-items:baseline;margin:8px 2px 12px}
+  .listHead h2{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+  .listHead .count{font-family:var(--mono);font-size:12px;color:var(--orange)}
+  .note{
+    border-bottom:1px solid var(--line);
+    padding:14px 2px;display:flex;gap:14px;align-items:flex-start;
+  }
+  .note.done{opacity:.4}
+  .note .ts{
+    font-family:var(--mono);font-size:14px;color:var(--orange);font-weight:600;
+    background:none;border:none;cursor:pointer;padding:2px 0;flex-shrink:0;
+    font-variant-numeric:tabular-nums;
+  }
+  .note .body{flex:1;min-width:0}
+  .note .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+  .note .tag{
+    font-size:10px;font-family:var(--mono);letter-spacing:.05em;color:var(--muted);
+    border:1px solid var(--line);border-radius:4px;padding:1px 6px;text-transform:uppercase;
+  }
+  .note .txt{font-size:15px;line-height:1.5;word-wrap:break-word}
+  .note .sec{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+  .note .memoBtn{
+    margin-top:6px;background:none;border:1px solid var(--line);color:var(--orange);
+    font-size:12px;padding:5px 12px;border-radius:999px;cursor:pointer;font-family:var(--mono);
+  }
+  .note .ctrl{display:flex;flex-direction:column;gap:12px;flex-shrink:0;align-items:center}
+  .iconBtn{background:none;border:none;font-size:15px;cursor:pointer;color:var(--muted);padding:2px}
+  .checkBtn{
+    width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);
+    background:none;cursor:pointer;color:transparent;font-size:12px;line-height:1;
+  }
+  .note.done .checkBtn{border-color:var(--orange);color:var(--orange)}
+  .emptyNotes{
+    text-align:center;color:var(--muted);font-size:13px;padding:28px 24px;line-height:1.65;
+    border:1px dashed var(--line);border-radius:var(--radius);
+  }
+
+  /* ---------- capture sheet ---------- */
+  #sheetBack{
+    position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;z-index:40;
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  }
+  #sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;
+    background:var(--surface);border-radius:20px 20px 0 0;
+    padding:18px 20px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;
+  }
+  .sheetTs{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}
+  .sheetTs .big{font-family:var(--mono);font-size:34px;font-weight:600;font-variant-numeric:tabular-nums}
+  .nudge{
+    background:none;border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;width:46px;height:38px;font-family:var(--mono);font-size:13px;cursor:pointer;
+  }
+
+  /* voice capture */
+  #voiceZone{text-align:center;margin-bottom:14px}
+  #micCircle{
+    width:108px;height:108px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--orange);color:#fff;font-size:38px;
+    display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 0 rgba(255,106,0,.45);
+  }
+  @media (prefers-reduced-motion:no-preference){
+    #micCircle.live{animation:pulse 1.6s ease-out infinite}
+    @keyframes pulse{
+      0%{box-shadow:0 0 0 0 rgba(255,106,0,.45)}
+      100%{box-shadow:0 0 0 26px rgba(255,106,0,0)}
+    }
+  }
+  #micState{font-size:13px;color:var(--ink);font-weight:600;margin-top:12px}
+  #micDevice{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;min-height:14px}
+  #transcript{
+    min-height:24px;font-size:16px;line-height:1.5;color:var(--ink);
+    padding:10px 6px;margin-top:6px;
+  }
+  #transcript:empty::before{content:'…';color:var(--muted)}
+  .micNote{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:8px}
+
+  #blockedBanner{
+    display:none;background:var(--bg);border:1px solid var(--orange);
+    border-radius:var(--radius);padding:12px 14px;font-size:12.5px;line-height:1.55;
+    color:var(--ink);margin-bottom:14px;text-wrap:balance;
+  }
+  #blockedBanner b{color:var(--orange)}
+
+  .tagRow{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+  .tagChip{
+    font-size:12px;font-family:var(--mono);padding:7px 13px;
+    border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;
+  }
+  .tagChip.on{border-color:var(--orange);color:var(--orange)}
+
+  #typeToggle{
+    display:block;margin:0 auto 10px;background:none;border:none;color:var(--muted);
+    font-size:12px;text-decoration:underline;cursor:pointer;
+  }
+  #noteText{
+    display:none;width:100%;min-height:84px;background:var(--bg);border:1px solid var(--line);
+    border-radius:var(--radius);color:var(--ink);font-size:16px;padding:12px;
+    font-family:inherit;resize:none;margin-bottom:10px;
+  }
+  #noteText:focus{outline:none;border-color:var(--orange)}
+  .sheetActions{display:flex;gap:10px}
+  .sheetActions .cancel{flex:1;background:none;border:1px solid var(--line);color:var(--muted);border-radius:var(--radius);padding:14px;font-size:15px;cursor:pointer}
+  .sheetActions .save{flex:2;background:var(--orange);border:none;color:#fff;border-radius:var(--radius);padding:14px;font-size:15px;font-weight:700;cursor:pointer}
+  .resumeRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--muted)}
+
+  #toast{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:13px;padding:10px 18px;border-radius:999px;display:none;max-width:88%;text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">MIXRIDE</div>
+  <div class="tagline">listen · talk · fix later</div>
+</header>
+
+<div id="emptyState">
+  <h1>Ride with your mix</h1>
+  <p>Load your bounce, press play, and just talk when something bugs you. Every note pins to the exact moment it happened.</p>
+  <label class="pickBtn">Load a track<input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
+  <div id="loadStatus"></div>
+  <p class="hint">Notes are saved per track name, so loading the same file again brings them right back.</p>
+</div>
+
+<div id="session">
+  <div class="trackName" id="trackName"></div>
+  <div class="timecode"><span id="tcNow">0:00.0</span><span class="total" id="tcTotal">/ 0:00</span></div>
+  <div class="sectionNow" id="sectionNow"></div>
+  <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div></div>
+
+  <div class="transport">
+    <button class="tBtn" id="back10">−10s</button>
+    <button class="tBtn" id="playBtn">▶</button>
+    <button class="tBtn" id="fwd10">+10s</button>
+  </div>
+  <div class="rateRow">
+    <button class="rateChip" data-rate="0.75">0.75×</button>
+    <button class="rateChip on" data-rate="1">1×</button>
+    <button class="rateChip" data-rate="1.25">1.25×</button>
+  </div>
+
+  <div class="rowBtns">
+    <button class="ghostBtn" id="markerBtn">+ Section marker</button>
+    <button class="ghostBtn" id="exportBtn">Export notes</button>
+  </div>
+
+  <div class="listHead">
+    <h2>Notes</h2><span class="count" id="noteCount"></span>
+  </div>
+  <div id="noteList"></div>
+  <div class="rowBtns" style="margin-top:18px">
+    <label class="ghostBtn" style="text-align:center">Load a different track<input type="file" id="fileInput2" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>
+  </div>
+</div>
+
+<button id="noteBtn"><span class="dot"></span>Drop a note</button>
+
+<div id="sheetBack"></div>
+<div id="sheet">
+  <div class="sheetTs">
+    <button class="nudge" id="tsMinus">−1s</button>
+    <span class="big" id="sheetTime">0:00</span>
+    <button class="nudge" id="tsPlus">+1s</button>
+  </div>
+
+  <div id="blockedBanner">
+    <b>Mic is blocked inside this preview.</b> The talk-only flow turns on automatically when MIXRIDE runs in Safari as its own page — ask Claude how to set that up in two minutes. For now, type your note below.
+  </div>
+
+  <div id="voiceZone">
+    <button id="micCircle">🎙</button>
+    <div id="micState">Listening — just talk</div>
+    <div id="micDevice"></div>
+    <div id="transcript"></div>
+    <div class="micNote">Tap the circle when you're done. The mix stays paused while you speak.</div>
+  </div>
+
+  <div class="tagRow" id="tagRow"></div>
+  <button id="typeToggle">Edit as text</button>
+  <textarea id="noteText" placeholder="bring vocal up 1dB, snare too bright, cut the pad here…"></textarea>
+  <div class="sheetActions">
+    <button class="cancel" id="cancelNote">Cancel</button>
+    <button class="save" id="saveNote">Save note</button>
+  </div>
+  <div class="resumeRow">
+    <input type="checkbox" id="resumeChk" checked>
+    <label for="resumeChk">Resume playback after saving</label>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this'];
+const REWIND=3;
+
+let fileName='', dur=0, peaks=null;
+let notes=[], markers=[], editingId=null, sheetTs=0, pickedTags=new Set();
+let storageOK=true;
+
+/* ================= WEB AUDIO PLAYER ================= */
+let actx=null, buffer=null, srcNode=null, playing=false, offset=0, startedAt=0, rate=1;
+
+function ensureCtx(){
+  if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)();
+  if(actx.state==='suspended')actx.resume();
+  return actx;
+}
+function curTime(){
+  if(!buffer)return 0;
+  if(!playing)return offset;
+  return Math.min(dur,offset+(actx.currentTime-startedAt)*rate);
+}
+function stopNode(){
+  if(srcNode){srcNode.onended=null;try{srcNode.stop();}catch(e){}srcNode=null;}
+}
+function play(){
+  if(!buffer||playing)return;
+  ensureCtx();
+  if(offset>=dur-0.05)offset=0;
+  srcNode=actx.createBufferSource();
+  srcNode.buffer=buffer;
+  srcNode.playbackRate.value=rate;
+  srcNode.connect(actx.destination);
+  const me=srcNode;
+  srcNode.onended=()=>{ if(srcNode===me&&playing){playing=false;offset=dur;srcNode=null;uiPlayState();} };
+  startedAt=actx.currentTime;
+  srcNode.start(0,offset);
+  playing=true;
+  uiPlayState();
+}
+function pause(){
+  if(!playing)return;
+  offset=curTime();
+  playing=false;
+  stopNode();
+  uiPlayState();
+}
+function seek(t){
+  const was=playing;
+  if(playing){offset=curTime();playing=false;stopNode();}
+  offset=Math.max(0,Math.min(dur,t));
+  if(was)play();else uiPlayState();
+}
+function setRate(r){
+  const was=playing;
+  if(playing){offset=curTime();playing=false;stopNode();}
+  rate=r;
+  if(was)play();
+}
+function uiPlayState(){
+  $('playBtn').textContent=playing?'❚❚':'▶';
+  $('noteBtn').classList.toggle('playing',playing);
+}
+
+/* ---------- helpers ---------- */
+function fmt(t,dec){t=Math.max(0,t);const m=Math.floor(t/60),s=t-m*60;
+  return dec?`${m}:${s.toFixed(1).padStart(4,'0')}`:`${m}:${String(Math.floor(s)).padStart(2,'0')}`;}
+function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2800);}
+function storageKey(){return 'mixride:'+fileName.replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
+
+async function loadSaved(){
+  if(!window.storage){storageOK=false;return;}
+  try{const r=await window.storage.get(storageKey());
+    if(r&&r.value){const d=JSON.parse(r.value);notes=d.notes||[];markers=d.markers||[];
+      if(notes.length)toast(`${notes.length} note${notes.length>1?'s':''} restored for this track`);}
+  }catch(e){/* nothing saved yet */}
+}
+async function persist(){
+  if(!storageOK||!window.storage)return;
+  try{
+    const slim=notes.map(n=>({id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done}));
+    await window.storage.set(storageKey(),JSON.stringify({notes:slim,markers}));
+  }catch(e){storageOK=false;}
+}
+
+/* ---------- file load ---------- */
+async function handleFile(f){
+  if(!f)return;
+  $('loadStatus').textContent='Decoding audio…';
+  try{
+    pause();
+    fileName=f.name;
+    const arr=await f.arrayBuffer();
+    ensureCtx();
+    buffer=await actx.decodeAudioData(arr);
+    dur=buffer.duration;
+    offset=0;playing=false;
+    const ch=buffer.getChannelData(0), N=460, step=Math.max(1,Math.floor(ch.length/N));
+    peaks=new Float32Array(N);
+    for(let i=0;i<N;i++){let m=0;for(let j=0;j<step;j+=16){const v=Math.abs(ch[i*step+j]||0);if(v>m)m=v;}peaks[i]=m;}
+    notes=[];markers=[];
+    $('emptyState').style.display='none';
+    $('session').style.display='block';
+    $('noteBtn').style.display='flex';
+    $('trackName').textContent=fileName;
+    $('tcTotal').textContent='/ '+fmt(dur);
+    $('loadStatus').textContent='';
+    await loadSaved();
+    renderNotes();drawWave();layoutPins();uiPlayState();
+  }catch(e){
+    $('loadStatus').textContent='';
+    toast('Could not decode that file — try MP3, M4A or WAV');
+  }
+}
+$('fileInput').addEventListener('change',e=>handleFile(e.target.files[0]));
+$('fileInput2').addEventListener('change',e=>handleFile(e.target.files[0]));
+
+/* ---------- waveform ---------- */
+function drawWave(){
+  const c=$('wave'),w=c.clientWidth,h=c.clientHeight,dpr=window.devicePixelRatio||1;
+  if(!w)return; c.width=w*dpr;c.height=h*dpr;
+  const g=c.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,w,h);
+  const prog=dur?curTime()/dur:0;
+  const N=peaks?peaks.length:120;
+  const bw=w/N;
+  for(let i=0;i<N;i++){
+    const p=peaks?Math.pow(peaks[i],0.7):0.3;
+    const bh=Math.max(2,p*(h-12));
+    g.fillStyle=(i/N<=prog)?'#ff6a00':'#2e2e2e';
+    g.fillRect(i*bw+0.5,(h-bh)/2,Math.max(1,bw-1.2),bh);
+  }
+  g.fillStyle='#ffffff';g.fillRect(prog*w-0.5,2,1.5,h-4);
+}
+function seekFromX(clientX){
+  const r=$('wave').getBoundingClientRect();
+  const f=Math.min(1,Math.max(0,(clientX-r.left)/r.width));
+  if(dur)seek(f*dur);
+}
+$('wave').addEventListener('pointerdown',e=>{seekFromX(e.clientX);
+  const mv=ev=>seekFromX(ev.clientX);
+  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);};
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);});
+window.addEventListener('resize',()=>{drawWave();layoutPins();});
+
+/* ---------- transport ---------- */
+$('playBtn').onclick=()=>{playing?pause():play();};
+$('back10').onclick=()=>seek(curTime()-10);
+$('fwd10').onclick=()=>seek(curTime()+10);
+document.querySelectorAll('.rateChip').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.rateChip').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');setRate(parseFloat(b.dataset.rate));
+});
+
+function tick(){
+  $('tcNow').textContent=fmt(curTime(),true);
+  $('sectionNow').textContent=sectionAt(curTime())||'';
+  drawWave();
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ---------- markers ---------- */
+function sectionAt(t){
+  let best=null;
+  for(const m of markers)if(m.t<=t&&(!best||m.t>best.t))best=m;
+  return best?best.name:null;
+}
+$('markerBtn').onclick=()=>{
+  const was=playing; pause();
+  const t=curTime();
+  const name=prompt('Name this section (Chorus 2, Bridge, Drop…):');
+  if(name&&name.trim()){markers.push({t,name:name.trim()});
+    markers.sort((a,b)=>a.t-b.t);persist();layoutPins();toast(`“${name.trim()}” marked at ${fmt(t)}`);}
+  if(was)play();
+};
+
+/* ---------- pins ---------- */
+function layoutPins(){
+  const layer=$('pinLayer');layer.innerHTML='';
+  if(!dur)return;
+  const w=$('wave').clientWidth;
+  for(const n of notes){
+    const p=document.createElement('div');
+    p.className='pin'+(n.done?' done':'');
+    p.style.left=(n.t/dur*w)+'px';
+    p.onclick=()=>seek(Math.max(0,n.t-1));
+    layer.appendChild(p);
+  }
+  for(const m of markers){
+    const f=document.createElement('div');
+    f.className='markerFlag';f.textContent=m.name;
+    f.style.left=(m.t/dur*w)+'px';
+    layer.appendChild(f);
+  }
+}
+
+/* ================= VOICE CAPTURE =================
+   Priority: SpeechRecognition (live transcript).
+   Fallback: MediaRecorder voice memo.
+   If the environment blocks the mic entirely, show the
+   banner and reveal the text box. */
+let micBlocked=false, listening=false, rec=null, mediaRec=null, mediaStream=null, memoBlob=null, memoUrl=null;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+
+async function showMicDevice(){
+  try{
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    const inp=devs.find(d=>d.kind==='audioinput'&&d.label);
+    $('micDevice').textContent=inp?('mic: '+inp.label.toLowerCase()):'';
+  }catch(e){$('micDevice').textContent='';}
+}
+
+function voiceUI(state){
+  // state: 'live' | 'stopped' | 'blocked' | 'editing'
+  const zone=$('voiceZone'), circ=$('micCircle');
+  if(state==='blocked'){
+    zone.style.display='none';
+    $('blockedBanner').style.display='block';
+    $('noteText').style.display='block';
+    $('typeToggle').style.display='none';
+    return;
+  }
+  zone.style.display='block';
+  $('blockedBanner').style.display='none';
+  if(state==='live'){
+    circ.classList.add('live');circ.textContent='■';
+    $('micState').textContent='Listening — just talk';
+  }else{
+    circ.classList.remove('live');circ.textContent='🎙';
+    $('micState').textContent=state==='editing'?'Tap to re-record':'Tap to talk again';
+  }
+}
+
+async function startVoice(){
+  if(micBlocked){voiceUI('blocked');return;}
+  memoBlob=null;
+  // Try SpeechRecognition first
+  if(SR){
+    try{
+      rec=new SR();rec.lang='en-US';rec.interimResults=true;rec.continuous=true;
+      let base=$('transcript').textContent?$('transcript').textContent+' ':'';
+      rec.onresult=e=>{
+        let fin='',inter='';
+        for(let i=0;i<e.results.length;i++){
+          if(e.results[i].isFinal)fin+=e.results[i][0].transcript;
+          else inter+=e.results[i][0].transcript;
+        }
+        $('transcript').textContent=(base+fin+inter).trim();
+      };
+      rec.onerror=ev=>{
+        if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
+          micBlocked=true;stopVoice();voiceUI('blocked');
+        }else{stopVoice();}
+      };
+      rec.onend=()=>{if(listening){listening=false;voiceUI('stopped');}};
+      rec.start();
+      listening=true;voiceUI('live');showMicDevice();
+      return;
+    }catch(e){/* fall through to recorder */}
+  }
+  // Fallback: record a voice memo
+  try{
+    mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const chunks=[];
+    mediaRec=new MediaRecorder(mediaStream);
+    mediaRec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+    mediaRec.onstop=()=>{
+      memoBlob=new Blob(chunks,{type:mediaRec.mimeType||'audio/mp4'});
+      $('micState').textContent='Voice memo saved with this note';
+    };
+    mediaRec.start();
+    listening=true;voiceUI('live');showMicDevice();
+    $('micState').textContent='Recording memo — just talk';
+  }catch(e){
+    micBlocked=true;voiceUI('blocked');
+  }
+}
+function stopVoice(){
+  listening=false;
+  if(rec){try{rec.stop();}catch(e){}rec=null;}
+  if(mediaRec&&mediaRec.state!=='inactive'){try{mediaRec.stop();}catch(e){}}
+  if(mediaStream){mediaStream.getTracks().forEach(t=>t.stop());mediaStream=null;}
+  voiceUI('stopped');
+}
+$('micCircle').onclick=()=>{listening?stopVoice():startVoice();};
+
+/* ---------- note capture ---------- */
+function buildTagRow(){
+  const row=$('tagRow');row.innerHTML='';
+  for(const t of TAGS){
+    const b=document.createElement('button');
+    b.className='tagChip'+(pickedTags.has(t)?' on':'');b.textContent=t;
+    b.onclick=()=>{pickedTags.has(t)?pickedTags.delete(t):pickedTags.add(t);b.classList.toggle('on');};
+    row.appendChild(b);
+  }
+}
+function openSheet(ts,existing){
+  sheetTs=ts;
+  pickedTags=new Set(existing?existing.tags:[]);
+  editingId=existing?existing.id:null;
+  $('sheetTime').textContent=fmt(sheetTs);
+  $('transcript').textContent=existing?(existing.text||''):'';
+  $('noteText').value=existing?(existing.text||''):'';
+  $('noteText').style.display='none';
+  $('typeToggle').style.display='block';
+  buildTagRow();
+  $('sheetBack').style.display='block';$('sheet').style.display='block';
+  if(existing){voiceUI('editing');}
+  else startVoice();        // talk-first: mic starts the moment the sheet opens
+}
+function closeSheet(){
+  stopVoice();
+  $('sheetBack').style.display='none';$('sheet').style.display='none';
+  editingId=null;memoBlob=null;
+}
+$('noteBtn').onclick=()=>{
+  const was=playing;
+  pause();
+  $('resumeChk').checked=was;
+  openSheet(Math.max(0,curTime()-REWIND));
+};
+$('tsMinus').onclick=()=>{sheetTs=Math.max(0,sheetTs-1);$('sheetTime').textContent=fmt(sheetTs);};
+$('tsPlus').onclick=()=>{sheetTs=Math.min(dur,sheetTs+1);$('sheetTime').textContent=fmt(sheetTs);};
+$('cancelNote').onclick=closeSheet;
+$('sheetBack').onclick=closeSheet;
+$('typeToggle').onclick=()=>{
+  $('noteText').value=$('transcript').textContent;
+  $('noteText').style.display='block';
+  $('typeToggle').style.display='none';
+  $('noteText').focus();
+};
+
+$('saveNote').onclick=()=>{
+  stopVoice();
+  const typed=$('noteText').style.display!=='none';
+  const text=(typed?$('noteText').value:$('transcript').textContent).trim();
+  if(!text&&pickedTags.size===0&&!memoBlob){toast('Say or pick what to change first');return;}
+  if(editingId){
+    const n=notes.find(x=>x.id===editingId);
+    if(n){n.text=text;n.tags=[...pickedTags];n.t=sheetTs;n.section=sectionAt(sheetTs);}
+  }else{
+    const n={id:Date.now()+''+Math.random().toString(16).slice(2,6),
+      t:sheetTs,text,tags:[...pickedTags],section:sectionAt(sheetTs),done:false};
+    if(memoBlob)n.memo=URL.createObjectURL(memoBlob);
+    notes.push(n);
+  }
+  notes.sort((a,b)=>a.t-b.t);
+  persist();renderNotes();layoutPins();
+  const resume=$('resumeChk').checked&&!editingId;
+  closeSheet();
+  toast('Saved at '+fmt(sheetTs));
+  if(resume)play();
+};
+
+/* ---------- notes list ---------- */
+let memoPlayer=null;
+function renderNotes(){
+  const list=$('noteList');list.innerHTML='';
+  $('noteCount').textContent=notes.length?`${notes.filter(n=>n.done).length}/${notes.length} fixed`:'';
+  if(!notes.length){
+    list.innerHTML='<div class="emptyNotes">No notes yet. Press play, then hit <b>Drop a note</b> and just talk — it pins a few seconds back automatically.</div>';
+    return;
+  }
+  for(const n of notes){
+    const d=document.createElement('div');d.className='note'+(n.done?' done':'');
+    const tags=n.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+    d.innerHTML=`
+      <button class="ts">${fmt(n.t)}</button>
+      <div class="body">
+        ${tags?`<div class="tags">${tags}</div>`:''}
+        ${n.text?`<div class="txt"></div>`:''}
+        ${n.section?`<div class="sec">${n.section}</div>`:''}
+        ${n.memo?`<button class="memoBtn">▶ memo</button>`:''}
+      </div>
+      <div class="ctrl">
+        <button class="checkBtn">✓</button>
+        <button class="iconBtn edit">✎</button>
+        <button class="iconBtn del">✕</button>
+      </div>`;
+    if(n.text)d.querySelector('.txt').textContent=n.text;
+    d.querySelector('.ts').onclick=()=>{seek(Math.max(0,n.t-1));if(!playing)play();};
+    d.querySelector('.checkBtn').onclick=()=>{n.done=!n.done;persist();renderNotes();layoutPins();};
+    d.querySelector('.edit').onclick=()=>openSheet(n.t,n);
+    d.querySelector('.del').onclick=()=>{notes=notes.filter(x=>x.id!==n.id);persist();renderNotes();layoutPins();};
+    const mb=d.querySelector('.memoBtn');
+    if(mb)mb.onclick=()=>{
+      pause();
+      if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
+      memoPlayer=new Audio(n.memo);memoPlayer.play().catch(()=>toast('Could not play memo here'));
+    };
+    list.appendChild(d);
+  }
+}
+
+/* ---------- export ---------- */
+$('exportBtn').onclick=async()=>{
+  if(!notes.length){toast('Nothing to export yet');return;}
+  let out=`MIX NOTES — ${fileName}\n${new Date().toLocaleDateString()}\n\n`;
+  for(const n of notes){
+    out+=`${fmt(n.t)}`;
+    if(n.section)out+=` (${n.section})`;
+    if(n.tags.length)out+=` [${n.tags.join(', ')}]`;
+    out+=` ${n.done?'✓ ':''}— ${n.text||(n.memo?'(voice memo)':'')}\n`;
+  }
+  try{await navigator.clipboard.writeText(out);toast('Copied — paste it next to your DAW');}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();toast('Copied to clipboard');
+  }
+};
+</script>
+</body>
+</html>
