@@ -1,0 +1,20 @@
+{
+  "name": "NOTED — Melomaniac Labs",
+  "short_name": "NOTED",
+  "description": "Voice-first mix notes for musicians. Talk to your mix.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "categories": ["music", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

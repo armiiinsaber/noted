@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="NOTED">
 <meta name="theme-color" content="#080808">
 <title>NOTED — Melomaniac Labs</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -460,6 +463,49 @@ const FLAG_TEXT='⚑ flagged — talk to fill in';
 const FLAG_MAX_AGE_MS=10*60*1000;
 const STORAGE_PREFIX='noted:';
 const LEGACY_PREFIX='mixride:';
+const IDB_NAME='noted';
+const IDB_VERSION=1;
+const IDB_STORE='memos';
+
+/* ========== IndexedDB: voice memo blobs (localStorage can't hold them) ========== */
+let idbPromise=null;
+function idbOpen(){
+  if(idbPromise) return idbPromise;
+  idbPromise=new Promise((res,rej)=>{
+    const req=indexedDB.open(IDB_NAME,IDB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+  return idbPromise;
+}
+function idbPutMemo(id,blob){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put({blob,type:blob.type,size:blob.size},id);
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>rej(tx.error);
+  }));
+}
+function idbGetMemo(id){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_STORE,'readonly');
+    const r=tx.objectStore(IDB_STORE).get(id);
+    r.onsuccess=()=>res(r.result||null);
+    r.onerror=()=>rej(r.error);
+  })).catch(()=>null);
+}
+function idbDelMemo(id){
+  return idbOpen().then(db=>new Promise((res)=>{
+    const tx=db.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).delete(id);
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>res();
+  })).catch(()=>{});
+}
 
 /* ========== storage: migrate legacy mixride:* keys → noted:* ========== */
 (function migrateLegacy(){
@@ -504,7 +550,7 @@ function persist(){
   try{
     const slim=notes.map(n=>({
       id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done,
-      flagged:n.flagged,flaggedAt:n.flaggedAt
+      flagged:n.flagged,flaggedAt:n.flaggedAt,hasMemo:!!n.hasMemo
     }));
     localStorage.setItem(storageKey(),JSON.stringify({notes:slim,markers}));
   }catch(e){}
@@ -742,7 +788,10 @@ function saveVoiceNote(t, text, memoBlob){
     id:Date.now()+''+Math.random().toString(16).slice(2,6),
     t, text, tags:[], section:sectionAt(t), done:false
   };
-  if(memoBlob) n.memo=URL.createObjectURL(memoBlob);
+  if(memoBlob){
+    n.hasMemo=true;
+    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persist(); renderNotes(); });
+  }
   notes.push(n);
   notes.sort((a,b)=>a.t-b.t);
   persist();renderNotes();layoutPins();
@@ -765,7 +814,10 @@ function fillFlaggedNote(id, text, memoBlob){
   const n=notes.find(x=>x.id===id);
   if(!n)return;
   n.text=text || (memoBlob ? '(voice memo)' : FLAG_TEXT);
-  if(memoBlob) n.memo=URL.createObjectURL(memoBlob);
+  if(memoBlob){
+    n.hasMemo=true;
+    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persist(); renderNotes(); });
+  }
   n.tags=(n.tags||[]).filter(t=>t!=='Flagged');
   n.flagged=false;
   n.section=sectionAt(n.t);
@@ -1131,13 +1183,14 @@ function renderNotes(){
     const d=document.createElement('div');
     d.className='note'+(n.done?' done':'')+(n.flagged?' flagged':'');
     const tags=(n.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+    const hasMemo=n.hasMemo||n.memo;   // n.memo kept for backward-compat with pre-IDB notes
     d.innerHTML=`
       <button class="ts">${fmt(n.t)}</button>
       <div class="body">
         ${tags?`<div class="tags">${tags}</div>`:''}
         ${n.text?`<div class="txt"></div>`:''}
         ${n.section?`<div class="sec">${n.section}</div>`:''}
-        ${n.memo?`<button class="memoBtn">▶ memo</button>`:''}
+        ${hasMemo?`<button class="memoBtn">▶ memo</button>`:''}
       </div>
       <div class="ctrl">
         <button class="checkBtn">✓</button>
@@ -1148,12 +1201,22 @@ function renderNotes(){
     d.querySelector('.ts').onclick=()=>{seek(Math.max(0,n.t-1)); if(!isPlaying()) play();};
     d.querySelector('.checkBtn').onclick=()=>{n.done=!n.done;persist();renderNotes();layoutPins();};
     d.querySelector('.edit').onclick=()=>openSheet(n);
-    d.querySelector('.del').onclick=()=>{notes=notes.filter(x=>x.id!==n.id);persist();renderNotes();layoutPins();};
+    d.querySelector('.del').onclick=()=>{
+      idbDelMemo(n.id);
+      notes=notes.filter(x=>x.id!==n.id);
+      persist();renderNotes();layoutPins();
+    };
     const mb=d.querySelector('.memoBtn');
-    if(mb) mb.onclick=()=>{
+    if(mb) mb.onclick=async()=>{
       pauseAudio();
       if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
-      memoPlayer=new Audio(n.memo);
+      let src=n.memo;   // legacy in-session URL
+      if(!src && n.hasMemo){
+        const rec=await idbGetMemo(n.id);
+        if(!rec){ toast('Memo missing from storage'); return; }
+        src=URL.createObjectURL(rec.blob);
+      }
+      memoPlayer=new Audio(src);
       memoPlayer.play().catch(()=>toast('Could not play memo here'));
     };
     list.appendChild(d);
@@ -1161,6 +1224,13 @@ function renderNotes(){
 }
 
 /* ================= EXPORT ================= */
+/* ================= SERVICE WORKER ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
 $('exportBtn').onclick=async()=>{
   if(!notes.length){toast('Nothing to export yet');return;}
   let out=`NOTED — ${fileName}\n${new Date().toLocaleDateString()}\n\n`;
@@ -1168,7 +1238,7 @@ $('exportBtn').onclick=async()=>{
     out+=`${fmt(n.t)}`;
     if(n.section) out+=` (${n.section})`;
     if(n.tags.length) out+=` [${n.tags.join(', ')}]`;
-    out+=` ${n.done?'✓ ':''}— ${n.text||(n.memo?'(voice memo)':'')}\n`;
+    out+=` ${n.done?'✓ ':''}— ${n.text||((n.memo||n.hasMemo)?'(voice memo)':'')}\n`;
   }
   try{
     await navigator.clipboard.writeText(out);
