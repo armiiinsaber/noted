@@ -145,6 +145,22 @@
   }
   .rateChip.on{color:var(--accent);border-bottom-color:var(--accent)}
 
+  /* ---------- Ride Mode indicator ---------- */
+  .wakeBadge{
+    display:none;text-align:center;
+    font-family:var(--mono);font-size:9px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--muted);
+    margin:2px 0 16px;
+  }
+  .wakeBadge.on{display:block}
+  .wakeBadge::before{
+    content:'●';color:var(--accent);margin-right:.55em;
+    text-shadow:0 0 6px rgba(var(--accent-rgb),.55);
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .wakeBadge.on::before{animation:blip 2.4s ease-in-out infinite}
+  }
+
   #noteBtn{
     position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
     transform:translateX(-50%);
@@ -209,6 +225,11 @@
     background:none;cursor:pointer;color:transparent;font-size:11px;line-height:1;
   }
   .note.done .checkBtn{border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),.08)}
+  /* Flagged (backgrounded pause) bookmarks — visually distinct until filled */
+  .note.flagged .ts{color:var(--muted)}
+  .note.flagged .txt{color:var(--muted)}
+  .note.flagged .tag{border-color:rgba(var(--accent-rgb),.5);color:var(--accent)}
+  .pin.flagged{background:transparent;border:1.5px solid var(--accent);width:7px;height:7px}
   .emptyNotes{
     text-align:center;color:var(--muted);font-size:11px;padding:28px 24px;line-height:1.9;
     letter-spacing:.06em;border:1px dashed var(--line);border-radius:var(--radius);
@@ -381,6 +402,7 @@
     <button class="rateChip on" data-rate="1">1×</button>
     <button class="rateChip" data-rate="1.25">1.25×</button>
   </div>
+  <div class="wakeBadge" id="wakeBadge">Screen staying awake</div>
 
   <div class="rowBtns">
     <button class="ghostBtn" id="markerBtn">+ Section marker</button>
@@ -400,7 +422,7 @@
 
 <!-- Full-screen pause-to-talk state -->
 <div id="listenOverlay">
-  <div class="lo-eyebrow"><span class="live"></span>Paused · Listening</div>
+  <div class="lo-eyebrow"><span class="live"></span><span id="loEyebrowText">Paused · Listening</span></div>
   <div class="lo-ts" id="loTs">0:00</div>
   <div class="lo-section" id="loSection"></div>
   <div class="lo-mic">🎙</div>
@@ -429,8 +451,10 @@
 
 <script>
 const $=id=>document.getElementById(id);
-const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this'];
+const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this','Flagged'];
 const REWIND=3;
+const FLAG_TEXT='⚑ flagged — talk to fill in';
+const FLAG_MAX_AGE_MS=10*60*1000;
 const STORAGE_PREFIX='noted:';
 const LEGACY_PREFIX='mixride:';
 
@@ -475,7 +499,10 @@ function loadSaved(){
 }
 function persist(){
   try{
-    const slim=notes.map(n=>({id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done}));
+    const slim=notes.map(n=>({
+      id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done,
+      flagged:n.flagged,flaggedAt:n.flaggedAt
+    }));
     localStorage.setItem(storageKey(),JSON.stringify({notes:slim,markers}));
   }catch(e){}
 }
@@ -492,6 +519,9 @@ function makeAudioEl(file){
   audioEl.src=blobUrl;
   audioEl.preload='auto';
   audioEl.playbackRate=rate;
+  // iOS wants this even on <audio> so it never grabs the fullscreen player
+  audioEl.setAttribute('playsinline','');
+  audioEl.playsInline=true;
   audioEl.addEventListener('play',onAudioPlay);
   audioEl.addEventListener('pause',onAudioPause);
   audioEl.addEventListener('ended',onAudioEnded);
@@ -519,20 +549,92 @@ function uiPlayState(){
   $('noteBtn').classList.toggle('playing',isPlaying());
 }
 
-/* ---------- MediaSession (headphone buttons) ---------- */
-function setupMediaSession(){
+/* ---------- Now Playing artwork (chartreuse mark on the dark bg) ---------- */
+let iconDataUrl=null, iconPromise=null;
+function ensureIcon(){
+  if(iconDataUrl) return Promise.resolve(iconDataUrl);
+  if(iconPromise) return iconPromise;
+  iconPromise=(async()=>{
+    try{ await document.fonts.load('400 260px "Bebas Neue"'); }catch(e){}
+    try{
+      const c=document.createElement('canvas');
+      c.width=512;c.height=512;
+      const g=c.getContext('2d');
+      g.fillStyle='#080808';
+      g.fillRect(0,0,512,512);
+      // Wordmark, scaled to a comfortable width
+      g.textAlign='center';
+      g.textBaseline='middle';
+      g.fillStyle='#b8f06e';
+      g.font='400 260px "Bebas Neue","Helvetica Neue",sans-serif';
+      const w0=g.measureText('NOTED').width || 1;
+      const targetW=380;
+      const size=260*targetW/w0;
+      g.font=`400 ${size}px "Bebas Neue","Helvetica Neue",sans-serif`;
+      g.fillText('NOTED',256,270);
+      // Small eyebrow line
+      g.font='400 22px "DM Mono",ui-monospace,monospace';
+      g.fillStyle='rgba(184,240,110,.5)';
+      g.fillText('— 03 · MELOMANIAC LABS —',256,390);
+      iconDataUrl=c.toDataURL('image/png');
+    }catch(e){ iconDataUrl=null; }
+    return iconDataUrl;
+  })();
+  return iconPromise;
+}
+
+/* ---------- MediaSession (headphone buttons + lock-screen card) ---------- */
+function setupMediaSessionHandlers(){
   if(!('mediaSession' in navigator))return;
   try{
-    navigator.mediaSession.metadata=new MediaMetadata({
-      title:fileName||'NOTED',
-      artist:'NOTED',
-      album:'Melomaniac Labs'
-    });
     navigator.mediaSession.setActionHandler('play',()=>play());
     navigator.mediaSession.setActionHandler('pause',()=>pauseAudio());
     navigator.mediaSession.setActionHandler('seekbackward',e=>seek(curTime()-((e&&e.seekOffset)||10)));
     navigator.mediaSession.setActionHandler('seekforward',e=>seek(curTime()+((e&&e.seekOffset)||10)));
   }catch(e){}
+}
+async function assertMediaSessionMetadata(){
+  if(!('mediaSession' in navigator))return;
+  try{
+    const icon=await ensureIcon();
+    const art=icon?[
+      {src:icon,sizes:'512x512',type:'image/png'},
+      {src:icon,sizes:'256x256',type:'image/png'},
+      {src:icon,sizes:'96x96',type:'image/png'}
+    ]:[];
+    navigator.mediaSession.metadata=new MediaMetadata({
+      title:fileName||'NOTED',
+      artist:'NOTED',
+      album:'Melomaniac Labs',
+      artwork:art
+    });
+  }catch(e){}
+}
+function setPlaybackState(s){
+  if(!('mediaSession' in navigator))return;
+  try{ navigator.mediaSession.playbackState=s; }catch(e){}
+}
+
+/* ---------- Screen Wake Lock (Ride Mode) ---------- */
+let wakeLock=null;
+async function requestWake(){
+  if(!('wakeLock' in navigator))return;
+  if(wakeLock)return;
+  if(document.visibilityState!=='visible')return; // wakeLock only granted while visible
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    $('wakeBadge').classList.add('on');
+    wakeLock.addEventListener('release',()=>{
+      wakeLock=null;
+      $('wakeBadge').classList.remove('on');
+    });
+  }catch(e){/* denied or unsupported — silent */}
+}
+async function releaseWake(){
+  if(!wakeLock)return;
+  try{ await wakeLock.release(); }catch(e){}
+  wakeLock=null;
+  $('wakeBadge').classList.remove('on');
 }
 
 /* ================= PAUSE-TO-TALK STATE MACHINE ================= */
@@ -540,9 +642,13 @@ let listenState='idle';   // 'idle' | 'listening'
 let pinTs=0, liveText='';
 let sr=null, srExpectedEnd=false;
 let memoRec=null, memoStream=null, memoChunks=[], usingMemo=false, pendingCommit=false;
+let fillingFlagId=null;   // when set, endListening fills that note instead of creating one
 
 function onAudioPlay(){
   hasPlayedOnce=true;
+  setPlaybackState('playing');
+  assertMediaSessionMetadata();  // re-assert every play — iOS resets sometimes
+  requestWake();
   if(listenState==='listening'){
     endListening({commit:true});
   }
@@ -550,25 +656,44 @@ function onAudioPlay(){
 }
 
 function onAudioPause(){
+  setPlaybackState('paused');
   if(!hasPlayedOnce){ uiPlayState(); return; }
-  if(listenState!=='listening'){ beginListening(); }
+  if(listenState==='listening'){ uiPlayState(); return; }
+
+  // Lock-screen / backgrounded pause: mic is forbidden — save a flagged bookmark
+  if(document.visibilityState==='hidden'){
+    saveFlaggedNote(Math.max(0,curTime()-REWIND));
+    uiPlayState();
+    return;
+  }
+
+  const customTs = fillingFlagId ? findFlagTs(fillingFlagId) : null;
+  beginListening(customTs);
   uiPlayState();
 }
 
 function onAudioEnded(){
+  setPlaybackState('none');
   if(listenState==='listening') endListening({commit:true});
+  releaseWake();
   uiPlayState();
 }
 
-function beginListening(){
+function findFlagTs(id){
+  const n=notes.find(x=>x.id===id);
+  return n ? n.t : null;
+}
+
+function beginListening(customTs){
   listenState='listening';
-  pinTs=Math.max(0,curTime()-REWIND);
+  pinTs=(customTs!=null) ? customTs : Math.max(0,curTime()-REWIND);
   liveText='';
   usingMemo=false;
   memoChunks=[];
   pendingCommit=false;
   $('loTs').textContent=fmt(pinTs);
   $('loSection').textContent=sectionAt(pinTs)||'';
+  $('loEyebrowText').textContent=fillingFlagId?'Filling flag · Listening':'Paused · Listening';
   const tr=$('loTranscript');
   tr.textContent='';
   tr.classList.remove('dim');
@@ -583,10 +708,13 @@ function endListening({commit}){
   // Recognition path: synchronous save
   if(!usingMemo){
     stopSR();
-    if(commit && liveText.trim().length){
-      saveVoiceNote(pinTs, liveText.trim(), null);
+    const text=liveText.trim();
+    if(commit && text.length){
+      if(fillingFlagId) fillFlaggedNote(fillingFlagId, text, null);
+      else saveVoiceNote(pinTs, text, null);
     }
     liveText='';
+    fillingFlagId=null;
     return;
   }
   // Memo fallback: blob arrives async in onstop — decide there
@@ -604,6 +732,42 @@ function saveVoiceNote(t, text, memoBlob){
   notes.sort((a,b)=>a.t-b.t);
   persist();renderNotes();layoutPins();
   toast('Saved at '+fmt(t));
+}
+
+function saveFlaggedNote(t){
+  const n={
+    id:Date.now()+''+Math.random().toString(16).slice(2,6),
+    t, text:FLAG_TEXT, tags:['Flagged'], section:sectionAt(t),
+    done:false, flagged:true, flaggedAt:Date.now()
+  };
+  notes.push(n);
+  notes.sort((a,b)=>a.t-b.t);
+  persist();renderNotes();layoutPins();
+  // No toast — the app is backgrounded, user can't see it
+}
+
+function fillFlaggedNote(id, text, memoBlob){
+  const n=notes.find(x=>x.id===id);
+  if(!n)return;
+  n.text=text || (memoBlob ? '(voice memo)' : FLAG_TEXT);
+  if(memoBlob) n.memo=URL.createObjectURL(memoBlob);
+  n.tags=(n.tags||[]).filter(t=>t!=='Flagged');
+  n.flagged=false;
+  n.section=sectionAt(n.t);
+  persist();renderNotes();layoutPins();
+  toast('Flag filled at '+fmt(n.t));
+}
+
+/* Auto-open listening pinned to a specific flag (invoked when returning
+   to visible with a fresh unfilled flag). */
+function autoFillFlag(flag){
+  fillingFlagId=flag.id;
+  // If audio is still playing, pause it — pause event will fire async;
+  // beginListening below will race ahead and set state so onAudioPause no-ops.
+  if(audioEl && !audioEl.paused){
+    try{ audioEl.pause(); }catch(e){}
+  }
+  if(listenState!=='listening') beginListening(flag.t);
 }
 
 /* ---------- SpeechRecognition (primary) ---------- */
@@ -668,8 +832,12 @@ async function startMemo(){
       const blob=new Blob(memoChunks,{type:memoRec.mimeType||'audio/webm'});
       if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
       memoRec=null;
-      if(pendingCommit && blob.size>0) saveVoiceNote(pinTs, '', blob);
+      if(pendingCommit && blob.size>0){
+        if(fillingFlagId) fillFlaggedNote(fillingFlagId, '', blob);
+        else saveVoiceNote(pinTs, '', blob);
+      }
       memoChunks=[]; pendingCommit=false;
+      fillingFlagId=null;
     };
     memoRec.start();
     tr.textContent='Recording voice memo';
@@ -689,10 +857,31 @@ function stopMemo(){
   // Not recording yet (still awaiting getUserMedia or mic denied) — clean up
   if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
   pendingCommit=false;
+  fillingFlagId=null;
 }
 
 /* ---------- overlay's save button (on-screen backup for play) ---------- */
 $('loSave').onclick=()=>play();
+
+/* ---------- Visibility change: re-acquire wake + offer flag fill ---------- */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  // Re-acquire wake lock (auto-released when hidden)
+  if(audioEl && !wakeLock) requestWake();
+  // If we were listening when the page went hidden, SR likely died — respin
+  if(listenState==='listening' && !usingMemo){
+    if(sr){ try{sr.onend=null;sr.abort();}catch(e){} sr=null; }
+    srExpectedEnd=false;
+    startSR();
+  }
+  // Auto-open fill for the latest unfilled flag inside the freshness window
+  const cutoff=Date.now()-FLAG_MAX_AGE_MS;
+  const latest=notes
+    .filter(n=>n.flagged && (n.flaggedAt||0)>cutoff)
+    .sort((a,b)=>(b.flaggedAt||0)-(a.flaggedAt||0))[0];
+  if(latest && listenState==='idle') autoFillFlag(latest);
+});
+window.addEventListener('pagehide',releaseWake);
 
 /* ================= FILE LOAD ================= */
 async function handleFile(f){
@@ -724,6 +913,7 @@ async function handleFile(f){
     // Playback via <audio> element (drives MediaSession)
     makeAudioEl(f);
     hasPlayedOnce=false;
+    fillingFlagId=null;
 
     notes=[];markers=[];
     $('emptyState').style.display='none';
@@ -733,7 +923,8 @@ async function handleFile(f){
     $('tcTotal').textContent='/ '+fmt(dur);
     $('loadStatus').textContent='';
     loadSaved();
-    setupMediaSession();
+    setupMediaSessionHandlers();
+    ensureIcon().catch(()=>{});  // pre-warm artwork so first play has a card
     renderNotes();drawWave();layoutPins();uiPlayState();
   }catch(e){
     $('loadStatus').textContent='';
@@ -826,7 +1017,7 @@ function layoutPins(){
   const w=$('wave').clientWidth;
   for(const n of notes){
     const p=document.createElement('div');
-    p.className='pin'+(n.done?' done':'');
+    p.className='pin'+(n.done?' done':'')+(n.flagged?' flagged':'');
     p.style.left=(n.t/dur*w)+'px';
     p.onclick=()=>seek(Math.max(0,n.t-1));
     layer.appendChild(p);
@@ -890,6 +1081,11 @@ $('saveNote').onclick=()=>{
     n.tags=[...pickedTags];
     n.t=sheetTs;
     n.section=sectionAt(sheetTs);
+    // Manual fill: if a flagged note's text was replaced with real content, clear the flag
+    if(n.flagged && n.text && n.text!==FLAG_TEXT){
+      n.flagged=false;
+      n.tags=n.tags.filter(t=>t!=='Flagged');
+    }
     notes.sort((a,b)=>a.t-b.t);
     persist();renderNotes();layoutPins();
     toast('Updated');
@@ -907,8 +1103,9 @@ function renderNotes(){
     return;
   }
   for(const n of notes){
-    const d=document.createElement('div');d.className='note'+(n.done?' done':'');
-    const tags=n.tags.map(t=>`<span class="tag">${t}</span>`).join('');
+    const d=document.createElement('div');
+    d.className='note'+(n.done?' done':'')+(n.flagged?' flagged':'');
+    const tags=(n.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
     d.innerHTML=`
       <button class="ts">${fmt(n.t)}</button>
       <div class="body">
