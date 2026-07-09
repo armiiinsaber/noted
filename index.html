@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080808;
@@ -28,91 +28,105 @@
     --accent-strong:#cbff7e;
     --accent-rgb:184,240,110;
     --radius:8px;
-    --mono:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-    --head:'Bebas Neue',sans-serif;
+    --radius-sm:4px;
+    --ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --display:'Fraunces','Times New Roman',Georgia,serif;
+    --fraunces:'SOFT' 40,'WONK' 0;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
     background:var(--bg);color:var(--ink);
-    font-family:var(--mono);
+    font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;
     -webkit-text-size-adjust:100%;
     overscroll-behavior:none;
     padding-bottom:env(safe-area-inset-bottom);
   }
-  p,h1,.hint,.emptyNotes,.micNote,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
+  p,h1,.hint,.emptyNotes,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
+
+  /* Every Fraunces call site opts into optical-sizing + the house axis mix */
+  .logo,.tagline,#emptyState h1{
+    font-family:var(--display);
+    font-optical-sizing:auto;
+    font-variation-settings:var(--fraunces);
+  }
+  /* Numeric readouts stay in Inter; the tabular figures come from OT */
+  .timecode,.lo-ts,.sheetTs .big,.note .ts,.rateChip,.nudge,.tBtn{
+    font-variant-numeric:tabular-nums;
+  }
 
   header{
     display:flex;align-items:flex-start;justify-content:space-between;
-    padding:20px 20px 10px;gap:12px;
+    padding:22px 22px 10px;gap:14px;
   }
-  .brand{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .brand{display:flex;flex-direction:column;gap:6px;min-width:0}
   .eyebrow{
     display:flex;align-items:center;gap:.6rem;
-    font-size:9px;letter-spacing:.36em;text-transform:uppercase;
-    color:rgba(var(--accent-rgb),.5);
+    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(var(--accent-rgb),.6);
   }
   .eyebrow::before{content:'';width:22px;height:1px;background:rgba(var(--accent-rgb),.4)}
   .logo{
-    font-family:var(--head);font-size:22px;letter-spacing:.22em;line-height:1;
+    font-size:30px;font-weight:500;letter-spacing:-.015em;line-height:.95;
     color:var(--accent);
   }
   .tagline{
-    font-family:var(--head);font-size:13px;letter-spacing:.16em;
-    color:var(--muted);text-transform:uppercase;text-align:right;padding-top:14px;
-    white-space:nowrap;
+    font-size:16px;font-weight:400;color:var(--muted);
+    line-height:1.15;text-align:right;padding-top:12px;white-space:nowrap;
   }
 
   /* ---------- empty state ---------- */
-  #emptyState{padding:10vh 24px 24px;text-align:center}
+  #emptyState{padding:9vh 24px 24px;text-align:center}
   #emptyState h1{
-    font-family:var(--head);font-size:clamp(44px,11vw,68px);
-    font-weight:400;letter-spacing:.03em;line-height:.9;
-    margin-bottom:14px;
+    font-size:clamp(46px,12vw,84px);
+    font-weight:500;letter-spacing:-.02em;line-height:.95;
+    margin-bottom:16px;
   }
   #emptyState h1 .g{color:var(--accent)}
   #emptyState p{
-    font-size:12px;color:var(--muted);line-height:2;letter-spacing:.04em;
-    max-width:320px;margin:0 auto 30px;
+    font-size:14px;color:var(--muted);line-height:1.7;
+    max-width:340px;margin:0 auto 30px;
   }
   .chips{
     display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem .8rem;
-    font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;
+    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
     color:var(--muted);margin-bottom:34px;
   }
   .chips span.sep{color:rgba(var(--accent-rgb),.35)}
   .pickBtn{
     display:inline-block;background:var(--accent);color:#080808;
-    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.22em;
-    text-transform:uppercase;padding:16px 30px;border-radius:999px;cursor:pointer;
+    font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.18em;
+    text-transform:uppercase;padding:16px 30px;border-radius:8px;cursor:pointer;
     transition:background .2s;
   }
   .pickBtn:hover{background:var(--accent-strong)}
   .pickBtn:active{transform:scale(.97)}
   .pickBtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-  .hint{margin-top:22px;font-size:10.5px;color:var(--muted);line-height:1.9;letter-spacing:.05em}
+  .hint{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.7}
   #loadStatus{
-    margin-top:18px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--accent);min-height:18px;
+    margin-top:18px;font-size:11px;font-weight:500;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent);min-height:18px;
   }
 
   /* ---------- session ---------- */
   #session{display:none;padding:0 16px 150px}
   .trackName{
-    font-size:11px;letter-spacing:.16em;color:var(--muted);text-align:center;
-    margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    padding:0 10px;text-transform:uppercase;
+    font-size:13px;color:var(--muted);text-align:center;
+    margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:0 10px;
   }
   .timecode{
-    font-family:var(--mono);font-size:48px;font-weight:400;text-align:center;
-    font-variant-numeric:tabular-nums;line-height:1;letter-spacing:.02em;
+    font-size:56px;font-weight:500;letter-spacing:-.02em;text-align:center;
+    line-height:1;
   }
   .timecode .total{
-    font-size:12px;color:var(--muted);display:block;margin-top:8px;letter-spacing:.14em;
+    font-size:13px;color:var(--muted);font-weight:400;
+    display:block;margin-top:8px;letter-spacing:0;
   }
   .sectionNow{
-    text-align:center;font-size:10px;color:var(--accent);letter-spacing:.32em;
-    text-transform:uppercase;height:15px;margin:10px 0 14px;font-family:var(--mono);
+    text-align:center;font-size:10px;font-weight:500;color:var(--accent);
+    letter-spacing:.28em;text-transform:uppercase;height:15px;margin:10px 0 14px;
   }
 
   #waveWrap{position:relative;height:84px;margin:0 2px}
@@ -124,15 +138,15 @@
   .pin.done{background:rgba(255,255,255,.22)}
   .markerFlag{
     position:absolute;bottom:-18px;transform:translateX(-50%);
-    font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.14em;
-    text-transform:uppercase;white-space:nowrap;
+    font-size:9px;font-weight:500;color:var(--muted);
+    letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;
   }
 
   .transport{display:flex;align-items:center;justify-content:center;gap:22px;margin:36px 0 12px}
   .tBtn{
     background:none;border:1px solid var(--line);color:var(--ink);
-    border-radius:50%;width:54px;height:54px;font-size:10px;font-family:var(--mono);
-    letter-spacing:.12em;cursor:pointer;font-weight:400;transition:border-color .2s;
+    border-radius:50%;width:54px;height:54px;font-size:11px;font-weight:500;
+    cursor:pointer;transition:border-color .2s;
   }
   .tBtn:hover{border-color:var(--line-strong)}
   .tBtn:active{background:var(--surface)}
@@ -145,16 +159,15 @@
   #playBtn:hover{border-color:var(--ink);color:var(--ink)}
   .rateRow{display:flex;justify-content:center;gap:6px;margin-bottom:22px}
   .rateChip{
-    font-family:var(--mono);font-size:10px;letter-spacing:.16em;
-    color:var(--muted);background:none;text-transform:uppercase;
-    border:none;border-bottom:1px solid transparent;padding:4px 8px;cursor:pointer;
+    font-size:12px;font-weight:500;color:var(--muted);background:none;
+    border:none;border-bottom:1px solid transparent;padding:4px 10px;cursor:pointer;
   }
   .rateChip.on{color:var(--accent);border-bottom-color:var(--accent)}
 
   /* ---------- Ride Mode indicator ---------- */
   .wakeBadge{
     display:none;text-align:center;
-    font-family:var(--mono);font-size:9px;letter-spacing:.32em;
+    font-size:10px;font-weight:500;letter-spacing:.24em;
     text-transform:uppercase;color:var(--muted);
     margin:2px 0 16px;
   }
@@ -170,9 +183,9 @@
   #noteBtn{
     position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
     transform:translateX(-50%);
-    width:min(420px,calc(100% - 32px));height:60px;border-radius:999px;border:none;
+    width:min(420px,calc(100% - 32px));height:56px;border-radius:8px;border:none;
     background:var(--accent);color:#080808;
-    font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.28em;
+    font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.2em;
     text-transform:uppercase;cursor:pointer;
     display:none;align-items:center;justify-content:center;gap:12px;
     box-shadow:0 8px 28px rgba(var(--accent-rgb),.28);
@@ -189,8 +202,8 @@
   .rowBtns{display:flex;gap:10px;margin:4px 0 22px}
   .ghostBtn{
     flex:1;background:none;border:1px solid var(--line);color:var(--muted);
-    font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
-    padding:14px 12px;border-radius:999px;cursor:pointer;font-weight:400;
+    font-family:var(--ui);font-size:11px;font-weight:500;letter-spacing:.18em;
+    text-transform:uppercase;padding:14px 12px;border-radius:8px;cursor:pointer;
     transition:color .2s,border-color .2s;
   }
   .ghostBtn:hover{color:var(--ink);border-color:var(--line-strong)}
@@ -198,30 +211,30 @@
 
   /* ---------- notes ---------- */
   .listHead{display:flex;justify-content:space-between;align-items:baseline;margin:8px 2px 12px}
-  .listHead h2{font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);font-weight:400}
-  .listHead .count{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
+  .listHead h2{font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .listHead .count{font-size:11px;font-weight:500;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
   .note{
     border-bottom:1px solid var(--line);
     padding:14px 2px;display:flex;gap:14px;align-items:flex-start;
   }
   .note.done{opacity:.4}
   .note .ts{
-    font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:400;
+    font-size:14px;font-weight:500;color:var(--accent);
     background:none;border:none;cursor:pointer;padding:2px 0;flex-shrink:0;
-    font-variant-numeric:tabular-nums;letter-spacing:.04em;
   }
   .note .body{flex:1;min-width:0}
   .note .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px}
   .note .tag{
-    font-size:9px;font-family:var(--mono);letter-spacing:.16em;color:var(--muted);
-    border:1px solid var(--line);border-radius:4px;padding:2px 7px;text-transform:uppercase;
+    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--muted);
+    border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:2px 7px;text-transform:uppercase;
   }
-  .note .txt{font-size:14px;line-height:1.55;word-wrap:break-word;letter-spacing:.02em}
-  .note .sec{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px;letter-spacing:.16em;text-transform:uppercase}
+  .note .txt{font-size:14px;line-height:1.55;word-wrap:break-word}
+  .note .sec{font-size:10px;font-weight:500;color:var(--muted);margin-top:4px;letter-spacing:.2em;text-transform:uppercase}
   .note .memoBtn{
     margin-top:6px;background:none;border:1px solid var(--line);color:var(--accent);
-    font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
-    padding:6px 12px;border-radius:999px;cursor:pointer;
+    font-family:var(--ui);font-size:10px;font-weight:500;letter-spacing:.18em;
+    text-transform:uppercase;padding:6px 12px;border-radius:6px;cursor:pointer;
   }
   .note .ctrl{display:flex;flex-direction:column;gap:12px;flex-shrink:0;align-items:center}
   .iconBtn{background:none;border:none;font-size:14px;cursor:pointer;color:var(--muted);padding:2px}
@@ -237,10 +250,10 @@
   .note.flagged .tag{border-color:rgba(var(--accent-rgb),.5);color:var(--accent)}
   .pin.flagged{background:transparent;border:1.5px solid var(--accent);width:7px;height:7px}
   .emptyNotes{
-    text-align:center;color:var(--muted);font-size:11px;padding:28px 24px;line-height:1.9;
-    letter-spacing:.06em;border:1px dashed var(--line);border-radius:var(--radius);
+    text-align:center;color:var(--muted);font-size:12px;padding:28px 24px;line-height:1.7;
+    border:1px dashed var(--line);border-radius:var(--radius);
   }
-  .emptyNotes b{color:var(--accent);font-weight:400}
+  .emptyNotes b{color:var(--accent);font-weight:500}
 
   /* ---------- listening overlay (pause-to-talk) ---------- */
   #listenOverlay{
@@ -253,7 +266,7 @@
   #listenOverlay.on{display:flex}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .lo-eyebrow{
-    font-family:var(--mono);font-size:10px;letter-spacing:.44em;
+    font-size:10px;font-weight:500;letter-spacing:.32em;
     text-transform:uppercase;color:var(--muted);margin-bottom:24px;
   }
   .lo-eyebrow .live{
@@ -264,12 +277,11 @@
   }
   @keyframes blip{50%{opacity:.25}}
   .lo-ts{
-    font-family:var(--mono);font-size:56px;font-weight:400;
-    font-variant-numeric:tabular-nums;letter-spacing:.02em;
+    font-size:64px;font-weight:500;letter-spacing:-.02em;
     color:var(--ink);line-height:1;margin-bottom:8px;
   }
   .lo-section{
-    font-family:var(--mono);font-size:10px;letter-spacing:.32em;
+    font-size:10px;font-weight:500;letter-spacing:.28em;
     text-transform:uppercase;color:var(--accent);height:14px;margin-bottom:34px;
   }
   .lo-mic{
@@ -287,21 +299,20 @@
     }
   }
   .lo-transcript{
-    font-family:var(--mono);font-size:17px;line-height:1.55;color:var(--ink);
-    letter-spacing:.01em;text-align:center;max-width:520px;min-height:52px;
-    margin-bottom:32px;
+    font-size:17px;line-height:1.55;color:var(--ink);
+    text-align:center;max-width:520px;min-height:52px;margin-bottom:32px;
   }
   .lo-transcript:empty::before{content:'…';color:var(--muted)}
   .lo-transcript.dim{color:var(--muted)}
   .lo-hint{
-    font-family:var(--mono);font-size:9.5px;letter-spacing:.28em;
+    font-size:10px;font-weight:500;letter-spacing:.22em;
     text-transform:uppercase;color:var(--muted);
     text-align:center;line-height:1.9;margin-bottom:22px;max-width:420px;
   }
   .lo-save{
     background:var(--accent);color:#080808;border:none;
-    font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.28em;
-    text-transform:uppercase;padding:16px 36px;border-radius:999px;cursor:pointer;
+    font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.2em;
+    text-transform:uppercase;padding:16px 32px;border-radius:8px;cursor:pointer;
     transition:background .2s;
   }
   .lo-save:hover{background:var(--accent-strong)}
@@ -320,51 +331,52 @@
     max-height:88vh;overflow-y:auto;
   }
   .sheetHead{
-    font-family:var(--mono);font-size:10px;letter-spacing:.32em;text-transform:uppercase;
+    font-size:10px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;
     color:var(--muted);text-align:center;margin-bottom:14px;
   }
   .sheetTs{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px}
   .sheetTs .big{
-    font-family:var(--mono);font-size:32px;font-weight:400;
-    font-variant-numeric:tabular-nums;letter-spacing:.02em;
+    font-size:32px;font-weight:500;letter-spacing:-.01em;
   }
   .nudge{
     background:none;border:1px solid var(--line);color:var(--ink);
-    border-radius:10px;width:48px;height:38px;font-family:var(--mono);font-size:11px;
-    letter-spacing:.08em;cursor:pointer;
+    border-radius:6px;width:48px;height:38px;
+    font-family:var(--ui);font-size:12px;font-weight:500;cursor:pointer;
   }
   .nudge:hover{border-color:var(--line-strong)}
   .tagRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
   .tagChip{
-    font-size:10px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase;
-    padding:7px 12px;border-radius:999px;border:1px solid var(--line);
+    font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+    padding:7px 12px;border-radius:6px;border:1px solid var(--line);
     background:none;color:var(--muted);cursor:pointer;
   }
   .tagChip.on{border-color:var(--accent);color:var(--accent)}
   #noteText{
     display:block;width:100%;min-height:96px;background:var(--bg);border:1px solid var(--line);
     border-radius:var(--radius);color:var(--ink);font-size:15px;padding:12px;
-    font-family:var(--mono);resize:none;margin-bottom:14px;letter-spacing:.02em;
+    font-family:var(--ui);resize:none;margin-bottom:14px;line-height:1.55;
   }
   #noteText:focus{outline:none;border-color:var(--accent)}
   .sheetActions{display:flex;gap:10px}
   .sheetActions .cancel{
     flex:1;background:none;border:1px solid var(--line);color:var(--muted);
-    border-radius:999px;padding:14px;font-family:var(--mono);font-size:11px;
-    letter-spacing:.22em;text-transform:uppercase;cursor:pointer;
+    border-radius:8px;padding:14px;
+    font-family:var(--ui);font-size:11px;font-weight:500;
+    letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
   }
   .sheetActions .save{
     flex:2;background:var(--accent);border:none;color:#080808;
-    border-radius:999px;padding:14px;font-family:var(--mono);font-size:11px;
-    font-weight:500;letter-spacing:.28em;text-transform:uppercase;cursor:pointer;
+    border-radius:8px;padding:14px;
+    font-family:var(--ui);font-size:11px;font-weight:600;
+    letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
   }
   .sheetActions .save:hover{background:var(--accent-strong)}
 
   #toast{
     position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99;
     background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);
-    font-family:var(--mono);font-size:11px;letter-spacing:.14em;
-    padding:10px 18px;border-radius:999px;display:none;max-width:88%;text-align:center;
+    font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;
+    display:none;max-width:88%;text-align:center;
   }
 </style>
 </head>
@@ -604,27 +616,35 @@ function ensureIcon(){
   if(iconDataUrl) return Promise.resolve(iconDataUrl);
   if(iconPromise) return iconPromise;
   iconPromise=(async()=>{
-    try{ await document.fonts.load('400 260px "Bebas Neue"'); }catch(e){}
+    // Fraunces for the wordmark, Inter for the eyebrow. Wait for both so the
+    // Media Session artwork doesn't ship in the fallback stack.
+    try{
+      await Promise.all([
+        document.fonts.load('600 240px "Fraunces"'),
+        document.fonts.load('500 22px "Inter"')
+      ]);
+    }catch(e){}
     try{
       const c=document.createElement('canvas');
       c.width=512;c.height=512;
       const g=c.getContext('2d');
       g.fillStyle='#080808';
       g.fillRect(0,0,512,512);
-      // Wordmark, scaled to a comfortable width
       g.textAlign='center';
       g.textBaseline='middle';
+      // Wordmark in Fraunces, sized to hit ~360px so the card reads at
+      // 96px scaling too. Tight tracking, medium weight — the house recipe.
       g.fillStyle='#b8f06e';
-      g.font='400 260px "Bebas Neue","Helvetica Neue",sans-serif';
-      const w0=g.measureText('NOTED').width || 1;
-      const targetW=380;
-      const size=260*targetW/w0;
-      g.font=`400 ${size}px "Bebas Neue","Helvetica Neue",sans-serif`;
-      g.fillText('NOTED',256,270);
-      // Small eyebrow line
-      g.font='400 22px "DM Mono",ui-monospace,monospace';
-      g.fillStyle='rgba(184,240,110,.5)';
-      g.fillText('— 03 · MELOMANIAC LABS —',256,390);
+      g.font='600 240px "Fraunces","Times New Roman",serif';
+      const w0=g.measureText('Noted').width || 1;
+      const targetW=360;
+      const size=240*targetW/w0;
+      g.font=`600 ${size}px "Fraunces","Times New Roman",serif`;
+      g.fillText('Noted',256,262);
+      // Eyebrow line — Inter, uppercase micro-tracking
+      g.fillStyle='rgba(184,240,110,.55)';
+      g.font='500 22px "Inter",-apple-system,BlinkMacSystemFont,sans-serif';
+      g.fillText('— 03 · MELOMANIAC LABS —',256,398);
       iconDataUrl=c.toDataURL('image/png');
     }catch(e){ iconDataUrl=null; }
     return iconDataUrl;
