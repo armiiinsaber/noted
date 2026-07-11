@@ -14,8 +14,20 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,0..100,0..1&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
+  /* Melomaniac Serif v0.1 — self-hosted display face, synced from the
+     melomaniacstudios repo (type-experiment branch). Base is Bodoni Moda
+     (SIL OFL 1.1); modification recipe in that repo's DESIGN.md § 8.
+     Roman only — nothing in NOTED currently uses display italic. */
+  @font-face {
+    font-family: 'Melomaniac Serif';
+    src: url('./fonts/melomaniac-serif-v0.1.woff') format('woff'),
+         url('./fonts/melomaniac-serif-v0.1.ttf')  format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
   :root{
     --bg:#080808;
     --surface:#0f0f0f;
@@ -30,8 +42,10 @@
     --radius:8px;
     --radius-sm:4px;
     --ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    --display:'Fraunces','Times New Roman',Georgia,serif;
-    --fraunces:'SOFT' 40,'WONK' 0;
+    --display:'Melomaniac Serif','Times New Roman',Georgia,serif;
+    /* wght 600 across every display call site — same knob as the house
+       site uses via --house-serif-display-wght on melomaniacstudios. */
+    --display-wght:600;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
@@ -45,11 +59,14 @@
   }
   p,h1,.hint,.emptyNotes,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
 
-  /* Every Fraunces call site opts into optical-sizing + the house axis mix */
+  /* Every display call site — wordmark, tagline, empty-state heading —
+     draws Melomaniac Serif at wght 600 with the opsz axis auto-selected
+     from the rendered font-size. */
   .logo,.tagline,#emptyState h1{
     font-family:var(--display);
     font-optical-sizing:auto;
-    font-variation-settings:var(--fraunces);
+    font-variation-settings:'wght' var(--display-wght);
+    font-weight:var(--display-wght);
   }
   /* Numeric readouts stay in Inter; the tabular figures come from OT */
   .timecode,.lo-ts,.sheetTs .big,.note .ts,.rateChip,.nudge,.tBtn{
@@ -68,11 +85,11 @@
   }
   .eyebrow::before{content:'';width:22px;height:1px;background:rgba(var(--accent-rgb),.4)}
   .logo{
-    font-size:30px;font-weight:500;letter-spacing:-.015em;line-height:.95;
+    font-size:30px;font-weight:var(--display-wght);letter-spacing:-.015em;line-height:.95;
     color:var(--accent);
   }
   .tagline{
-    font-size:16px;font-weight:400;color:var(--muted);
+    font-size:16px;font-weight:var(--display-wght);color:var(--muted);
     line-height:1.15;text-align:right;padding-top:12px;white-space:nowrap;
   }
 
@@ -80,7 +97,7 @@
   #emptyState{padding:9vh 24px 24px;text-align:center}
   #emptyState h1{
     font-size:clamp(46px,12vw,84px);
-    font-weight:500;letter-spacing:-.02em;line-height:.95;
+    font-weight:var(--display-wght);letter-spacing:-.02em;line-height:.95;
     margin-bottom:16px;
   }
   #emptyState h1 .g{color:var(--accent)}
@@ -616,11 +633,11 @@ function ensureIcon(){
   if(iconDataUrl) return Promise.resolve(iconDataUrl);
   if(iconPromise) return iconPromise;
   iconPromise=(async()=>{
-    // Fraunces for the wordmark, Inter for the eyebrow. Wait for both so the
-    // Media Session artwork doesn't ship in the fallback stack.
+    // Melomaniac Serif for the wordmark, Inter for the eyebrow. Wait for both
+    // so the Media Session artwork doesn't ship in the fallback stack.
     try{
       await Promise.all([
-        document.fonts.load('600 240px "Fraunces"'),
+        document.fonts.load('600 240px "Melomaniac Serif"'),
         document.fonts.load('500 22px "Inter"')
       ]);
     }catch(e){}
@@ -632,14 +649,14 @@ function ensureIcon(){
       g.fillRect(0,0,512,512);
       g.textAlign='center';
       g.textBaseline='middle';
-      // Wordmark in Fraunces, sized to hit ~360px so the card reads at
-      // 96px scaling too. Tight tracking, medium weight — the house recipe.
+      // Wordmark in the house display face — Melomaniac Serif v0.1 — sized
+      // to hit ~360px so the card reads at 96px scaling too.
       g.fillStyle='#b8f06e';
-      g.font='600 240px "Fraunces","Times New Roman",serif';
+      g.font='600 240px "Melomaniac Serif","Times New Roman",serif';
       const w0=g.measureText('Noted').width || 1;
       const targetW=360;
       const size=240*targetW/w0;
-      g.font=`600 ${size}px "Fraunces","Times New Roman",serif`;
+      g.font=`600 ${size}px "Melomaniac Serif","Times New Roman",serif`;
       g.fillText('Noted',256,262);
       // Eyebrow line — Inter, uppercase micro-tracking
       g.fillStyle='rgba(184,240,110,.55)';
