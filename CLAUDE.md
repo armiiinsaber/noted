@@ -21,4 +21,4 @@ Voice-first PWA for musicians taking timestamped mix notes while listening to a 
 - One bold element (the green mic circle in the listening overlay / Drop-a-note pill); everything else quiet.
 
 ## Definition of done
-Deployed to `noted.melomaniacstudios.com` over HTTPS, installed to home screen, where pressing **pause on the headphone remote** immediately starts recognition and pressing **play** saves the transcript pinned to the moment before pause.
+Deployed to `notedbymm.com` over HTTPS, installed to home screen, where pressing **pause on the headphone remote** immediately starts recognition and pressing **play** saves the transcript pinned to the moment before pause.

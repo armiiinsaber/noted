@@ -28,13 +28,13 @@ If any of the site tokens change, re-fetch the linked Webflow CSS and the inline
 The main site is Webflow, which can't host a standalone JS app well. Do this instead:
 
 1. Deploy NOTED as a static site (Netlify or Vercel — free tier).
-2. Point a subdomain: **noted.melomaniacstudios.com** (CNAME from the domain DNS to the host). Subdomain gets automatic HTTPS → the mic works, which is the whole product.
+2. Point the apex domain: **notedbymm.com** — four A records to the GitHub Pages addresses, plus `www` as a CNAME to `armiiinsaber.github.io.` (pointing `www` at the apex instead leaves it out of the certificate). Automatic HTTPS → the mic works, which is the whole product.
 3. On the Webflow site, add a product section for 03 · NOTED mirroring the Manifold/Frequency sections: number, name, tagline, description, feature chips, and a `Launch NOTED →` button linking to the subdomain.
 4. Add NOTED to the Early Access section copy ("Manifold turns any audio into a reactive 3D sculpture. Frequency finds your song in four questions. NOTED lets you talk to your mix. These are the first three.") and to the Live product list.
 5. PWA polish for the subdomain: update `manifest.json` name to "NOTED — Melomaniac Labs", theme color to `#080808`, and generate app icons in the new palette so Add to Home Screen looks branded.
 
 ## Definition of done
 
-- noted.melomaniacstudios.com live over HTTPS, headphone play/pause driving the capture flow on iPhone Safari
+- notedbymm.com live over HTTPS, headphone play/pause driving the capture flow on iPhone Safari
 - App visually indistinguishable from a native Melomaniac Labs product (tokens extracted, not guessed)
 - Product card live on melomaniacstudios.com linking to it

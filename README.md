@@ -19,7 +19,7 @@ Open the URL it prints. Note: the mic and MediaSession API both require HTTPS. L
 
 **GitHub Pages** — push this folder to a repo, then Settings → Pages → deploy from main branch.
 
-**Melomaniac Labs subdomain** — point `noted.melomaniacstudios.com` at whichever host you picked (see `NOTED-REBRAND.md`).
+**Own domain** — `notedbymm.com` is the canonical home, served from GitHub Pages via the `CNAME` file (see `NOTED-REBRAND.md`). It replaced the old `noted.melomaniacstudios.com` subdomain.
 
 Open the URL on your iPhone in Safari → Share → **Add to Home Screen**. Allow mic access on the first pause. From then on, everything is headphone-only.
 
