@@ -35,6 +35,10 @@
     --line-strong:rgba(255,255,255,.16);
     --ink:#ffffff;
     --muted:rgba(255,255,255,.38);
+    /* The house's `dim` step, matched to echoes (#a6a499 over its ground).
+       noted's --muted sits a good deal darker than that, which is right for
+       incidental labels but too faint for a paragraph someone has to read. */
+    --dim:rgba(255,255,255,.62);
     --dim2:rgba(255,255,255,.16);
     --accent:#b8f06e;
     --accent-strong:#cbff7e;
@@ -134,7 +138,7 @@
   }
   #heroWave{width:100%;height:100%;display:block}
   .lp-line{
-    font-size:15px;line-height:1.65;color:var(--muted);
+    font-size:15px;line-height:1.65;color:var(--dim);
     max-width:31ch;margin:0 0 var(--s5);
     text-wrap:balance;   /* with the NBSP in the markup, the em dash can't orphan */
   }
@@ -157,6 +161,91 @@
     bottom:calc(var(--s3) + env(safe-area-inset-bottom));
     width:1px;height:34px;
     background:linear-gradient(to bottom,transparent,var(--dim2));
+  }
+
+  /* ══════════ HOW IT WORKS ═══════════════════════════════════════════
+     A direct translation of the echoes landing's #how section. Measures are
+     the same: 448px column, 96px section padding, 80px between steps, 16px
+     within one. Type is the same too — the numeral and title are the UI face
+     at weight 600 / -.015em tracking, NOT the display serif. echoes reserves
+     the serif for its wordmark alone, exactly as noted does. */
+  #how{
+    max-width:448px;margin:0 auto;padding:96px 24px;
+    display:flex;flex-direction:column;gap:80px;
+  }
+  .how-rule{display:block;width:40px;height:1px;background:rgba(var(--accent-rgb),.5)}
+  .how-step{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .how-n{
+    font-size:72px;font-weight:600;letter-spacing:-.015em;line-height:1;
+    color:var(--accent);font-variant-numeric:tabular-nums;
+  }
+  .how-t{
+    display:flex;align-items:center;gap:10px;
+    font-size:24px;font-weight:600;letter-spacing:-.015em;line-height:1.33;
+    color:var(--ink);
+  }
+  .how-t::before{
+    content:'';width:6px;height:6px;border-radius:50%;
+    background:var(--accent);flex-shrink:0;
+  }
+  .how-l{
+    font-size:14px;line-height:1.625;color:var(--dim);
+    max-width:320px;text-wrap:balance;
+  }
+
+  /* Vignettes — ink on green, the house's signature pairing. The ink here is
+     DESIGN.md's #141310, not this page's ground: on a chartreuse fill the
+     house always sets warm near-black, never the page black. */
+  .vig{
+    --vink:#141310;
+    width:100%;background:var(--accent);border-radius:16px;color:var(--vink);
+  }
+  /* 01 — the queue */
+  .vig-queue{position:relative;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .vq-line{position:absolute;left:21px;top:20px;bottom:20px;width:1px;background:rgba(20,19,16,.3)}
+  .vq-row{position:relative;padding-left:24px}
+  .vq-dot{
+    position:absolute;left:3px;top:50%;transform:translateY(-50%);
+    width:6px;height:6px;border-radius:50%;background:var(--vink);
+  }
+  .vq-card{
+    display:flex;align-items:center;gap:12px;
+    border:1px solid rgba(20,19,16,.3);border-radius:8px;padding:10px;
+  }
+  .vq-ico{
+    width:36px;height:36px;flex-shrink:0;border-radius:6px;
+    background:var(--vink);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+  }
+  .vq-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .vq-txt b{font-size:14px;font-weight:600;line-height:1.3}
+  .vq-txt i{font-size:12px;font-style:normal;color:rgba(20,19,16,.7);line-height:1.4}
+  .vq-n{
+    flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:.06em;
+    color:rgba(20,19,16,.6);font-variant-numeric:tabular-nums;
+  }
+  /* 02 — riding, mid-track */
+  .vig-ride{position:relative;height:176px;overflow:hidden}
+  .vr-svg{position:absolute;inset:0;width:100%;height:100%}
+  .vr-chip{
+    position:absolute;left:16px;bottom:16px;
+    background:var(--vink);color:var(--accent);
+    border-radius:999px;padding:4px 12px;
+    font-size:11px;font-weight:600;letter-spacing:.04em;
+  }
+  /* 03 — the pause-to-talk moment */
+  .vig-talk{height:192px;display:grid;place-items:center}
+  .vt-circle{
+    position:relative;width:112px;height:112px;border-radius:50%;
+    background:var(--vink);color:var(--accent);
+    display:grid;place-items:center;text-align:center;
+  }
+  .vt-ring{position:absolute;border-radius:50%;border:1px solid rgba(20,19,16,.3)}
+  .vt-r1{inset:-12px}
+  .vt-r2{inset:-24px;border-color:rgba(20,19,16,.15)}
+  .vt-label{
+    font-size:8px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+    padding:0 10px;line-height:1.4;
   }
 
   /* ---------- below the fold: quiet secondary strip ---------- */
@@ -520,6 +609,91 @@
     <label class="pickBtn lp-cta">Load tracks<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
     <div id="loadStatus"></div>
     <div class="lp-scroll" aria-hidden="true"></div>
+  </section>
+
+  <!-- Mirrors the echoes landing's #how section: hairline, oversized accent
+       numeral, dotted lowercase title, one line, then an ink-on-green
+       vignette. Same measures (448px column, 96/80/16px rhythm) and the same
+       ink-on-green vignette pairing — noted's own steps and drawings. -->
+  <section id="how">
+    <span class="how-rule" aria-hidden="true"></span>
+
+    <div class="how-step">
+      <p class="how-n" aria-hidden="true">01</p>
+      <h2 class="how-t">load</h2>
+      <p class="how-l">Load one bounce, or a whole queue for the ride.</p>
+      <div class="vig vig-queue">
+        <span class="vq-line" aria-hidden="true"></span>
+        <div class="vq-row">
+          <span class="vq-dot" aria-hidden="true"></span>
+          <div class="vq-card">
+            <span class="vq-ico" aria-hidden="true">♪</span>
+            <span class="vq-txt"><b>ride home v3</b><i>bounce · 4:12</i></span>
+            <span class="vq-n">01</span>
+          </div>
+        </div>
+        <div class="vq-row">
+          <span class="vq-dot" aria-hidden="true"></span>
+          <div class="vq-card">
+            <span class="vq-ico" aria-hidden="true">♪</span>
+            <span class="vq-txt"><b>chorus rework</b><i>bounce · 3:48</i></span>
+            <span class="vq-n">02</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-step">
+      <p class="how-n" aria-hidden="true">02</p>
+      <h2 class="how-t">ride</h2>
+      <p class="how-l">Press play, pocket the phone, and just ride.</p>
+      <div class="vig vig-ride">
+        <svg viewBox="0 0 320 176" aria-hidden="true" class="vr-svg">
+          <g fill="#141310">
+            <rect x="14"  y="80" width="4" height="16" rx="2" opacity=".45"/>
+            <rect x="26"  y="72" width="4" height="32" rx="2" opacity=".45"/>
+            <rect x="38"  y="60" width="4" height="56" rx="2" opacity=".45"/>
+            <rect x="50"  y="68" width="4" height="40" rx="2" opacity=".45"/>
+            <rect x="62"  y="46" width="4" height="84" rx="2" opacity=".45"/>
+            <rect x="74"  y="58" width="4" height="60" rx="2" opacity=".45"/>
+            <rect x="86"  y="70" width="4" height="36" rx="2" opacity=".45"/>
+            <rect x="98"  y="52" width="4" height="72" rx="2" opacity=".45"/>
+            <rect x="110" y="64" width="4" height="48" rx="2" opacity=".45"/>
+            <rect x="122" y="42" width="4" height="92" rx="2" opacity=".45"/>
+            <rect x="134" y="56" width="4" height="64" rx="2" opacity=".45"/>
+            <rect x="146" y="74" width="4" height="28" rx="2"/>
+            <rect x="158" y="62" width="4" height="52" rx="2"/>
+            <rect x="170" y="50" width="4" height="76" rx="2"/>
+            <rect x="182" y="68" width="4" height="40" rx="2"/>
+            <rect x="194" y="58" width="4" height="60" rx="2"/>
+            <rect x="206" y="72" width="4" height="32" rx="2"/>
+            <rect x="218" y="54" width="4" height="68" rx="2"/>
+            <rect x="230" y="66" width="4" height="44" rx="2"/>
+            <rect x="242" y="76" width="4" height="24" rx="2"/>
+            <rect x="254" y="64" width="4" height="48" rx="2"/>
+            <rect x="266" y="78" width="4" height="20" rx="2"/>
+            <rect x="278" y="82" width="4" height="12" rx="2"/>
+            <rect x="290" y="84" width="4" height="8"  rx="2"/>
+          </g>
+          <rect x="142" y="30" width="2" height="116" fill="#141310"/>
+          <circle cx="143" cy="30" r="4" fill="#141310"/>
+        </svg>
+        <span class="vr-chip">02 / 03 · playing</span>
+      </div>
+    </div>
+
+    <div class="how-step">
+      <p class="how-n" aria-hidden="true">03</p>
+      <h2 class="how-t">talk</h2>
+      <p class="how-l">Pause on your headphones and talk&nbsp;— it pins itself.</p>
+      <div class="vig vig-talk">
+        <div class="vt-circle">
+          <span class="vt-ring vt-r1" aria-hidden="true"></span>
+          <span class="vt-ring vt-r2" aria-hidden="true"></span>
+          <span class="vt-label">Pause to talk</span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="lp-more">
