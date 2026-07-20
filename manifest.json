@@ -1,6 +1,6 @@
 {
-  "name": "NOTED — Melomaniac Labs",
-  "short_name": "NOTED",
+  "name": "noted 1.0 — Melomaniac Labs",
+  "short_name": "noted 1.0",
   "description": "Voice-first mix notes for musicians. Talk to your mix.",
   "start_url": "./",
   "scope": "./",

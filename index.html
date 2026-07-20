@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NOTED">
+<meta name="apple-mobile-web-app-title" content="noted 1.0">
 <meta name="theme-color" content="#080808">
-<title>NOTED — Melomaniac Labs</title>
+<title>noted 1.0 — Melomaniac Labs</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -59,14 +59,23 @@
   }
   p,h1,.hint,.emptyNotes,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
 
-  /* Every display call site — wordmark, tagline, empty-state heading —
-     draws Melomaniac Serif at wght 600 with the opsz axis auto-selected
-     from the rendered font-size. */
-  .logo,.tagline,#emptyState h1{
+  /* The display face is reserved for the wordmark and nothing else. Every
+     other string in the app is something a user reads — headlines, taglines,
+     copy, labels, transcripts — and those are all Inter. */
+  .logo{
     font-family:var(--display);
     font-optical-sizing:auto;
     font-variation-settings:'wght' var(--display-wght);
     font-weight:var(--display-wght);
+  }
+  /* Version sits with the wordmark: same face, smaller, quieter. The gap is
+     .55em of the SMALL size (~7px at a 30px logo) — em here resolves against
+     this element's own font-size, not the wordmark's. */
+  .logo .ver{
+    font-size:.42em;
+    margin-left:.55em;
+    opacity:.5;
+    letter-spacing:.02em;
   }
   /* Numeric readouts stay in Inter; the tabular figures come from OT */
   .timecode,.lo-ts,.sheetTs .big,.note .ts,.rateChip,.nudge,.tBtn{
@@ -89,15 +98,15 @@
     color:var(--accent);
   }
   .tagline{
-    font-size:16px;font-weight:var(--display-wght);color:var(--muted);
-    line-height:1.15;text-align:right;padding-top:12px;white-space:nowrap;
+    font-size:14px;font-weight:500;color:var(--muted);
+    line-height:1.15;text-align:right;padding-top:14px;white-space:nowrap;
   }
 
   /* ---------- empty state ---------- */
   #emptyState{padding:9vh 24px 24px;text-align:center}
   #emptyState h1{
-    font-size:clamp(46px,12vw,84px);
-    font-weight:var(--display-wght);letter-spacing:-.02em;line-height:.95;
+    font-size:clamp(40px,10.5vw,68px);
+    font-weight:600;letter-spacing:-.035em;line-height:1.02;
     margin-bottom:16px;
   }
   #emptyState h1 .g{color:var(--accent)}
@@ -226,7 +235,58 @@
   .ghostBtn:hover{color:var(--ink);border-color:var(--line-strong)}
   .ghostBtn:active{background:var(--surface)}
 
+  /* ---------- queue ---------- */
+  /* Hidden for a single track — a one-item queue is just noise. */
+  #queueWrap{display:none}
+  #queueWrap.on{display:block}
+  .qItem{
+    display:flex;align-items:center;gap:12px;
+    padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .qItem .qNum{
+    font-size:10px;font-weight:500;letter-spacing:.16em;color:var(--dim2);
+    font-variant-numeric:tabular-nums;width:18px;flex-shrink:0;
+  }
+  .qItem .qName{
+    flex:1;min-width:0;font-size:13px;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .qItem .qMeta{
+    font-size:9px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim2);flex-shrink:0;
+  }
+  .qItem .qDel{
+    background:none;border:none;color:var(--dim2);font-size:13px;
+    cursor:pointer;padding:2px 0 2px 6px;flex-shrink:0;
+  }
+  .qItem .qDel:hover{color:var(--ink)}
+  .qItem.on .qNum{color:var(--accent)}
+  .qItem.on .qName{color:var(--ink)}
+  .qItem.on .qMeta{color:var(--accent)}
+  .qItem.missing .qName{opacity:.45}
+  .qItem.missing .qMeta{color:var(--accent)}
+
   /* ---------- notes ---------- */
+  /* Track header inside the notes list — only rendered for a real queue */
+  .trackGroup{
+    display:flex;align-items:center;gap:10px;
+    margin:20px 2px 2px;padding-bottom:7px;
+    border-bottom:1px solid var(--line);
+  }
+  .trackGroup .tgNum{
+    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--dim2);
+    font-variant-numeric:tabular-nums;
+  }
+  .trackGroup .tgName{
+    flex:1;min-width:0;font-size:10px;font-weight:500;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .trackGroup .tgCount{
+    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--dim2);
+    font-variant-numeric:tabular-nums;
+  }
+  .trackGroup.on .tgNum,.trackGroup.on .tgName,.trackGroup.on .tgCount{color:var(--accent)}
   .listHead{display:flex;justify-content:space-between;align-items:baseline;margin:8px 2px 12px}
   .listHead h2{font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
   .listHead .count{font-size:11px;font-weight:500;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
@@ -402,7 +462,7 @@
 <header>
   <div class="brand">
     <div class="eyebrow">03 · Melomaniac Labs</div>
-    <div class="logo">NOTED</div>
+    <div class="logo">noted<span class="ver">1.0</span></div>
   </div>
   <div class="tagline">Talk to your mix.</div>
 </header>
@@ -416,9 +476,9 @@
     <span>Any Audio Format</span><span class="sep">·</span>
     <span>Works Offline</span>
   </div>
-  <label class="pickBtn">Load a track<input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
+  <label class="pickBtn">Load tracks<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
   <div id="loadStatus"></div>
-  <p class="hint">Notes are saved per track name — loading the same file again brings them right back.</p>
+  <p class="hint">Pick several at once to build a ride queue — it plays straight through. Notes are saved per track name, so loading the same file again brings them right back.</p>
 </div>
 
 <div id="session">
@@ -444,12 +504,19 @@
     <button class="ghostBtn" id="exportBtn">Export notes</button>
   </div>
 
+  <div id="queueWrap">
+    <div class="listHead">
+      <h2>Queue</h2><span class="count" id="queueCount"></span>
+    </div>
+    <div id="queueList"></div>
+  </div>
+
   <div class="listHead">
     <h2>Notes</h2><span class="count" id="noteCount"></span>
   </div>
   <div id="noteList"></div>
   <div class="rowBtns" style="margin-top:18px">
-    <label class="ghostBtn" style="text-align:center">Load a different track<input type="file" id="fileInput2" accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>
+    <label class="ghostBtn" style="text-align:center">Add tracks<input type="file" id="fileInput2" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>
   </div>
 </div>
 
@@ -493,8 +560,10 @@ const FLAG_MAX_AGE_MS=10*60*1000;
 const STORAGE_PREFIX='noted:';
 const LEGACY_PREFIX='mixride:';
 const IDB_NAME='noted';
-const IDB_VERSION=1;
+const IDB_VERSION=2;
 const IDB_STORE='memos';
+const IDB_TRACKS='tracks';   // audio blobs, so a queue survives reload
+const QUEUE_KEY=STORAGE_PREFIX+'queue';
 
 /* ========== IndexedDB: voice memo blobs (localStorage can't hold them) ========== */
 let idbPromise=null;
@@ -505,6 +574,7 @@ function idbOpen(){
     req.onupgradeneeded=()=>{
       const db=req.result;
       if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      if(!db.objectStoreNames.contains(IDB_TRACKS)) db.createObjectStore(IDB_TRACKS);
     };
     req.onsuccess=()=>res(req.result);
     req.onerror=()=>rej(req.error);
@@ -536,6 +606,33 @@ function idbDelMemo(id){
   })).catch(()=>{});
 }
 
+/* Audio blobs, so reloading mid-ride doesn't mean re-picking the whole queue.
+   Best-effort throughout: a quota failure must never break playback. */
+function idbPutTrack(key,blob,name){
+  return idbOpen().then(db=>new Promise((res,rej)=>{
+    const tx=db.transaction(IDB_TRACKS,'readwrite');
+    tx.objectStore(IDB_TRACKS).put({blob,name,type:blob.type},key);
+    tx.oncomplete=()=>res(true);
+    tx.onerror=()=>rej(tx.error);
+  })).catch(()=>false);
+}
+function idbGetTrack(key){
+  return idbOpen().then(db=>new Promise((res)=>{
+    const tx=db.transaction(IDB_TRACKS,'readonly');
+    const r=tx.objectStore(IDB_TRACKS).get(key);
+    r.onsuccess=()=>res(r.result||null);
+    r.onerror=()=>res(null);
+  })).catch(()=>null);
+}
+function idbDelTrack(key){
+  return idbOpen().then(db=>new Promise((res)=>{
+    const tx=db.transaction(IDB_TRACKS,'readwrite');
+    tx.objectStore(IDB_TRACKS).delete(key);
+    tx.oncomplete=()=>res();
+    tx.onerror=()=>res();
+  })).catch(()=>{});
+}
+
 /* ========== storage: migrate legacy mixride:* keys → noted:* ========== */
 (function migrateLegacy(){
   try{
@@ -555,6 +652,15 @@ function idbDelMemo(id){
 let fileName='',dur=0,peaks=null;
 let notes=[],markers=[],editingId=null,sheetTs=0,pickedTags=new Set();
 
+/* ================= QUEUE =================
+   An ordered set of tracks for one ride. `notes`/`markers` above always point
+   at the CURRENT track's arrays, so every downstream consumer (pins, sheet,
+   waveform, listening flow) keeps working untouched. Notes belong to a track
+   by virtue of living under that track's storage key. */
+let queue=[];          // [{key,name,file,missing}]
+let qIndex=-1;         // index into queue, -1 = nothing loaded
+let notesByTrack={};   // key -> {notes,markers}  (all tracks, for the grouped list)
+
 /* ================= AUDIO ENGINE =================
    Playback: <audio> element with blob URL (drives MediaSession).
    Web Audio is used ONLY to decode peaks for the waveform. */
@@ -564,39 +670,65 @@ function fmt(t,dec){t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;
   return dec?`${m}:${s.toFixed(1).padStart(4,'0')}`:`${m}:${String(Math.floor(s)).padStart(2,'0')}`;}
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600);}
-function storageKey(){return STORAGE_PREFIX+fileName.replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
+/* Storage key is derived from the track name — unchanged from the
+   single-track scheme, so sessions saved before the queue still restore. */
+function trackKey(name){return STORAGE_PREFIX+String(name||'').replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
+function storageKey(){return trackKey(fileName);}
 
-function loadSaved(){
+function readTrack(key){
   try{
-    const raw=localStorage.getItem(storageKey());
-    if(!raw)return;
+    const raw=localStorage.getItem(key);
+    if(!raw) return {notes:[],markers:[]};
     const d=JSON.parse(raw);
-    notes=d.notes||[];markers=d.markers||[];
-    if(notes.length)toast(`${notes.length} note${notes.length>1?'s':''} restored`);
-  }catch(e){}
+    return {notes:d.notes||[],markers:d.markers||[]};
+  }catch(e){ return {notes:[],markers:[]}; }
 }
-function persist(){
+function loadSaved(){
+  const key=storageKey();
+  const d=notesByTrack[key]||readTrack(key);
+  notes=d.notes; markers=d.markers;
+  notesByTrack[key]={notes,markers};
+  if(notes.length)toast(`${notes.length} note${notes.length>1?'s':''} restored`);
+}
+function persistTrack(key,data){
   try{
-    const slim=notes.map(n=>({
+    const slim=(data.notes||[]).map(n=>({
       id:n.id,t:n.t,text:n.text,tags:n.tags,section:n.section,done:n.done,
       flagged:n.flagged,flaggedAt:n.flaggedAt,hasMemo:!!n.hasMemo
     }));
-    localStorage.setItem(storageKey(),JSON.stringify({notes:slim,markers}));
+    localStorage.setItem(key,JSON.stringify({notes:slim,markers:data.markers||[]}));
   }catch(e){}
 }
+function persist(){
+  if(!fileName)return;
+  const key=storageKey();
+  notesByTrack[key]={notes,markers};
+  persistTrack(key,{notes,markers});
+}
+function persistQueue(){
+  try{
+    localStorage.setItem(QUEUE_KEY,JSON.stringify({
+      tracks:queue.map(t=>({key:t.key,name:t.name})),
+      index:qIndex
+    }));
+  }catch(e){}
+}
+function notesFor(key){
+  if(!notesByTrack[key]) notesByTrack[key]=readTrack(key);
+  return notesByTrack[key];
+}
 
-function makeAudioEl(file){
-  if(audioEl){
-    try{audioEl.pause();}catch(e){}
-    audioEl.removeAttribute('src');
-    audioEl.load();
-  }
-  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
-  blobUrl=URL.createObjectURL(file);
+/* ONE audio element for the whole session, reused across tracks.
+   iOS only lets an element play without a fresh user gesture once that
+   element has been unlocked by one — so swapping `src` on the original
+   element is what makes hands-free auto-advance work. Building a new
+   Audio() per track would get the next track blocked with the phone
+   pocketed, which is the entire point of the queue. */
+let switchingTrack=false;
+function ensureAudioEl(){
+  if(audioEl) return audioEl;
   audioEl=new Audio();
-  audioEl.src=blobUrl;
   audioEl.preload='auto';
-  audioEl.playbackRate=rate;
   // iOS wants this even on <audio> so it never grabs the fullscreen player
   audioEl.setAttribute('playsinline','');
   audioEl.playsInline=true;
@@ -604,12 +736,21 @@ function makeAudioEl(file){
   audioEl.addEventListener('pause',onAudioPause);
   audioEl.addEventListener('ended',onAudioEnded);
   audioEl.addEventListener('loadedmetadata',()=>{
-    if(isFinite(audioEl.duration)&&audioEl.duration>0){
+    if(audioEl && isFinite(audioEl.duration) && audioEl.duration>0){
       dur=audioEl.duration;
       $('tcTotal').textContent='/ '+fmt(dur);
       layoutPins();
     }
   });
+  return audioEl;
+}
+function setTrackSrc(file){
+  const el=ensureAudioEl();
+  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}
+  blobUrl=URL.createObjectURL(file);
+  el.src=blobUrl;
+  el.playbackRate=rate;
+  el.load();
 }
 
 function play(){ if(!audioEl)return; audioEl.play().catch(()=>{}); }
@@ -649,15 +790,28 @@ function ensureIcon(){
       g.fillRect(0,0,512,512);
       g.textAlign='center';
       g.textBaseline='middle';
-      // Wordmark in the house display face — Melomaniac Serif v0.1 — sized
-      // to hit ~360px so the card reads at 96px scaling too.
+      // Wordmark in the house display face — Melomaniac Serif v0.1 — with the
+      // version set smaller and quieter beside it, mirroring the in-app logo.
+      // Sized so "noted" hits ~330px and the pair still reads at 96px scaling.
+      const FACE='"Melomaniac Serif","Times New Roman",serif';
+      g.font=`600 240px ${FACE}`;
+      const w0=g.measureText('noted').width || 1;
+      const size=240*330/w0;
+      const verSize=size*0.42;
+      const gap=size*0.16;
+      g.font=`600 ${size}px ${FACE}`;
+      const wName=g.measureText('noted').width;
+      g.font=`600 ${verSize}px ${FACE}`;
+      const wVer=g.measureText('1.0').width;
+      const x0=256-(wName+gap+wVer)/2;
+      g.textAlign='left';
       g.fillStyle='#b8f06e';
-      g.font='600 240px "Melomaniac Serif","Times New Roman",serif';
-      const w0=g.measureText('Noted').width || 1;
-      const targetW=360;
-      const size=240*targetW/w0;
-      g.font=`600 ${size}px "Melomaniac Serif","Times New Roman",serif`;
-      g.fillText('Noted',256,262);
+      g.font=`600 ${size}px ${FACE}`;
+      g.fillText('noted',x0,262);
+      g.fillStyle='rgba(184,240,110,.55)';
+      g.font=`600 ${verSize}px ${FACE}`;
+      g.fillText('1.0',x0+wName+gap,262);
+      g.textAlign='center';
       // Eyebrow line — Inter, uppercase micro-tracking
       g.fillStyle='rgba(184,240,110,.55)';
       g.font='500 22px "Inter",-apple-system,BlinkMacSystemFont,sans-serif';
@@ -678,6 +832,20 @@ function setupMediaSessionHandlers(){
     navigator.mediaSession.setActionHandler('seekbackward',e=>seek(curTime()-((e&&e.seekOffset)||10)));
     navigator.mediaSession.setActionHandler('seekforward',e=>seek(curTime()+((e&&e.seekOffset)||10)));
   }catch(e){}
+  // Queue skip from the headphone remote / lock screen. Registered only for a
+  // real queue so a single track keeps the plain two-button remote behaviour.
+  try{
+    const multi=queue.length>1;
+    navigator.mediaSession.setActionHandler('nexttrack', multi?()=>{
+      if(qIndex>-1 && qIndex<queue.length-1) loadTrack(qIndex+1,{autoplay:true});
+    }:null);
+    navigator.mediaSession.setActionHandler('previoustrack', multi?()=>{
+      // Restart the current track first, as every music player does; only
+      // step back a track if we're still near its start.
+      if(curTime()>3){ seek(0); return; }
+      if(qIndex>0) loadTrack(qIndex-1,{autoplay:true});
+    }:null);
+  }catch(e){}
 }
 async function assertMediaSessionMetadata(){
   if(!('mediaSession' in navigator))return;
@@ -689,8 +857,8 @@ async function assertMediaSessionMetadata(){
       {src:icon,sizes:'96x96',type:'image/png'}
     ]:[];
     navigator.mediaSession.metadata=new MediaMetadata({
-      title:fileName||'NOTED',
-      artist:'NOTED',
+      title:fileName||'noted 1.0',
+      artist:'noted 1.0',
       album:'Melomaniac Labs',
       artwork:art
     });
@@ -744,6 +912,9 @@ function onAudioPlay(){
 
 function onAudioPause(){
   setPlaybackState('paused');
+  // Swapping src on a playing element emits 'pause'. That is bookkeeping,
+  // not the user reaching for their headphones — never open the mic on it.
+  if(switchingTrack){ uiPlayState(); return; }
   if(!hasPlayedOnce){ uiPlayState(); return; }
   if(listenState==='listening'){ uiPlayState(); return; }
 
@@ -771,10 +942,17 @@ function onAudioPause(){
 }
 
 function onAudioEnded(){
-  setPlaybackState('none');
+  // Commit any in-flight note to the track it was taken on, before advancing.
   if(listenState==='listening') endListening({commit:true});
+  if(qIndex>-1 && qIndex<queue.length-1){
+    // Keep the wake lock and playback state — the ride continues.
+    loadTrack(qIndex+1,{autoplay:true});
+    return;
+  }
+  setPlaybackState('none');
   releaseWake();
   uiPlayState();
+  if(queue.length>1) toast('Queue finished');
 }
 
 function findFlagTs(id){
@@ -831,7 +1009,7 @@ function saveVoiceNote(t, text, memoBlob){
   }
   notes.push(n);
   notes.sort((a,b)=>a.t-b.t);
-  persist();renderNotes();layoutPins();
+  persist();renderQueue();renderNotes();layoutPins();
   toast('Saved at '+fmt(t));
 }
 
@@ -843,7 +1021,7 @@ function saveFlaggedNote(t){
   };
   notes.push(n);
   notes.sort((a,b)=>a.t-b.t);
-  persist();renderNotes();layoutPins();
+  persist();renderQueue();renderNotes();layoutPins();
   // No toast — the app is backgrounded, user can't see it
 }
 
@@ -858,7 +1036,7 @@ function fillFlaggedNote(id, text, memoBlob){
   n.tags=(n.tags||[]).filter(t=>t!=='Flagged');
   n.flagged=false;
   n.section=sectionAt(n.t);
-  persist();renderNotes();layoutPins();
+  persist();renderQueue();renderNotes();layoutPins();
   toast('Flag filled at '+fmt(n.t));
 }
 
@@ -987,57 +1165,146 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('pagehide',releaseWake);
 
-/* ================= FILE LOAD ================= */
-async function handleFile(f){
-  if(!f)return;
-  $('loadStatus').textContent='Decoding audio…';
+/* ================= FILE LOAD / QUEUE ================= */
+function sortFiles(files){
+  // Numeric-aware so "02 verse" lands before "10 outro" — bounces are
+  // usually numbered and the ride should follow that order.
+  return [...files].filter(Boolean)
+    .sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+}
+
+async function decodePeaks(file){
+  if(!decodeCtx) decodeCtx=new (window.AudioContext||window.webkitAudioContext)();
+  const arr=await file.arrayBuffer();
+  const buf=await decodeCtx.decodeAudioData(arr);
+  const ch=buf.getChannelData(0), N=460, step=Math.max(1,Math.floor(ch.length/N));
+  const p=new Float32Array(N);
+  for(let i=0;i<N;i++){
+    let m=0;
+    for(let j=0;j<step;j+=16){ const v=Math.abs(ch[i*step+j]||0); if(v>m) m=v; }
+    p[i]=m;
+  }
+  return {peaks:p,duration:buf.duration};
+}
+
+let userPicked=false;
+async function addFiles(fileList,{replace}={}){
+  const files=sortFiles(fileList||[]);
+  if(!files.length)return;
+  userPicked=true;
+  if(replace){ queue=[]; qIndex=-1; notesByTrack={}; hasPlayedOnce=false; }
+  const startAt=queue.length;
+  let added=0;
+  for(const f of files){
+    const key=trackKey(f.name);
+    const existing=queue.find(t=>t.key===key);
+    if(existing){ existing.file=f; existing.missing=false; continue; }
+    queue.push({key,name:f.name,file:f,missing:false});
+    notesFor(key);                 // surface any previously saved notes in the list
+    idbPutTrack(key,f,f.name);     // best-effort blob stash for reload; never awaited
+    added++;
+  }
+  persistQueue();
+  renderQueue();
+  if(qIndex===-1) await loadTrack(startAt,{autoplay:false});
+  else { renderNotes(); if(added) toast(`${added} track${added>1?'s':''} queued`); }
+}
+
+async function loadTrack(i,{autoplay}={}){
+  const t=queue[i];
+  if(!t) return;
+  if(!t.file){ t.missing=true; renderQueue(); toast('That track needs re-loading'); return; }
+  switchingTrack=true;
+  if(listenState==='listening'){
+    // Discard in-flight listening — the note belonged to the outgoing track
+    $('listenOverlay').classList.remove('on');
+    stopSR(); stopMemo();
+    listenState='idle'; liveText='';
+  }
+  persist();                       // flush outgoing track's notes before switching
+  qIndex=i; fileName=t.name;
+  peaks=null; dur=0;
+  setTrackSrc(t.file);
+  fillingFlagId=null; quietPause=false;
+  $('emptyState').style.display='none';
+  $('session').style.display='block';
+  $('noteBtn').style.display='flex';
+  $('trackName').textContent=fileName;
+  $('tcTotal').textContent='/ 0:00';
+  loadSaved();
+  setupMediaSessionHandlers();
+  assertMediaSessionMetadata();
+  ensureIcon().catch(()=>{});
+  persistQueue();
+  renderQueue();renderNotes();layoutPins();uiPlayState();
+  if(autoplay){ hasPlayedOnce=true; play(); }
+  // Clear on the next tick: swapping src emits a 'pause' we must not treat
+  // as a headphone press.
+  setTimeout(()=>{ switchingTrack=false; },0);
+
+  // The waveform is cosmetic, so it is decoded AFTER playback is already
+  // running. Decoding first would stall every auto-advance by seconds —
+  // exactly when the phone is in a pocket and nobody can intervene.
+  $('loadStatus').textContent='';
   try{
-    if(isPlaying()) pauseAudio();
-    if(listenState==='listening'){
-      // Discard any in-flight listening (rare: user swaps files while paused)
-      $('listenOverlay').classList.remove('on');
-      stopSR(); stopMemo();
-      listenState='idle';
-    }
-    fileName=f.name;
-
-    // Peaks via AudioContext (decode only, no playback)
-    if(!decodeCtx) decodeCtx=new (window.AudioContext||window.webkitAudioContext)();
-    const arr=await f.arrayBuffer();
-    const buf=await decodeCtx.decodeAudioData(arr);
-    const ch=buf.getChannelData(0), N=460, step=Math.max(1,Math.floor(ch.length/N));
-    peaks=new Float32Array(N);
-    for(let i=0;i<N;i++){
-      let m=0;
-      for(let j=0;j<step;j+=16){ const v=Math.abs(ch[i*step+j]||0); if(v>m) m=v; }
-      peaks[i]=m;
-    }
-    dur=buf.duration;
-
-    // Playback via <audio> element (drives MediaSession)
-    makeAudioEl(f);
-    hasPlayedOnce=false;
-    fillingFlagId=null;
-    quietPause=false;
-
-    notes=[];markers=[];
-    $('emptyState').style.display='none';
-    $('session').style.display='block';
-    $('noteBtn').style.display='flex';
-    $('trackName').textContent=fileName;
-    $('tcTotal').textContent='/ '+fmt(dur);
-    $('loadStatus').textContent='';
-    loadSaved();
-    setupMediaSessionHandlers();
-    ensureIcon().catch(()=>{});  // pre-warm artwork so first play has a card
-    renderNotes();drawWave();layoutPins();uiPlayState();
+    const r=await decodePeaks(t.file);
+    if(qIndex===i){ peaks=r.peaks; if(!dur) dur=r.duration; drawWave(); layoutPins(); }
   }catch(e){
-    $('loadStatus').textContent='';
-    toast('Could not decode that file — try MP3, M4A or WAV');
+    if(qIndex===i){ peaks=null; drawWave(); toast('Waveform unavailable for this file'); }
   }
 }
-$('fileInput').addEventListener('change',e=>handleFile(e.target.files[0]));
-$('fileInput2').addEventListener('change',e=>handleFile(e.target.files[0]));
+
+function removeTrack(i){
+  const t=queue[i];
+  if(!t)return;
+  const wasCurrent=(i===qIndex);
+  queue.splice(i,1);
+  idbDelTrack(t.key);
+  if(queue.length===0){
+    qIndex=-1;
+    try{ pauseAudio(); }catch(e){}
+    persistQueue();
+    $('session').style.display='none';
+    $('noteBtn').style.display='none';
+    $('emptyState').style.display='block';
+    return;
+  }
+  if(wasCurrent){ loadTrack(Math.min(i,queue.length-1),{autoplay:isPlaying()}); return; }
+  if(i<qIndex) qIndex--;
+  persistQueue();renderQueue();renderNotes();
+}
+
+$('fileInput').addEventListener('change',e=>{ addFiles(e.target.files,{replace:true}); e.target.value=''; });
+$('fileInput2').addEventListener('change',e=>{ addFiles(e.target.files); e.target.value=''; });
+
+/* Restore a ride after reload: queue order from localStorage, audio from IDB. */
+async function restoreQueue(){
+  if(userPicked)return;   // user got there first; never clobber a live pick
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(QUEUE_KEY)||'null'); }catch(e){}
+  if(!saved||!Array.isArray(saved.tracks)||!saved.tracks.length)return;
+  queue=saved.tracks.map(t=>({key:t.key,name:t.name,file:null,missing:true}));
+  queue.forEach(t=>notesFor(t.key));
+  renderQueue();
+  let restored=0;
+  for(const t of queue){
+    const rec=await idbGetTrack(t.key);
+    if(rec&&rec.blob){
+      // Wrap back into a File so the rest of the pipeline is unchanged
+      t.file=new File([rec.blob],t.name,{type:rec.blob.type||'audio/mpeg'});
+      t.missing=false; restored++;
+    }
+  }
+  renderQueue();
+  if(!restored||userPicked)return;
+  const idx=Math.min(Math.max(0,saved.index|0),queue.length-1);
+  const start=queue[idx]&&queue[idx].file?idx:queue.findIndex(t=>t.file);
+  if(start>-1){
+    await loadTrack(start,{autoplay:false});
+    toast(`Queue restored — ${restored} track${restored>1?'s':''}`);
+  }
+}
+restoreQueue().catch(()=>{});
 
 /* ================= WAVEFORM ================= */
 function drawWave(){
@@ -1201,62 +1468,132 @@ $('saveNote').onclick=()=>{
       n.tags=n.tags.filter(t=>t!=='Flagged');
     }
     notes.sort((a,b)=>a.t-b.t);
-    persist();renderNotes();layoutPins();
+    persist();renderQueue();renderNotes();layoutPins();
     toast('Updated');
   }
   closeSheet();
 };
 
+/* ================= QUEUE LIST ================= */
+function renderQueue(){
+  const wrap=$('queueWrap'),list=$('queueList');
+  if(queue.length<2){ wrap.classList.remove('on'); return; }
+  wrap.classList.add('on');
+  $('queueCount').textContent=`${qIndex>-1?qIndex+1:0} / ${queue.length}`;
+  list.innerHTML='';
+  queue.forEach((t,i)=>{
+    const n=notesFor(t.key).notes.length;
+    const d=document.createElement('div');
+    d.className='qItem'+(i===qIndex?' on':'')+(t.missing?' missing':'');
+    d.innerHTML=`
+      <span class="qNum">${String(i+1).padStart(2,'0')}</span>
+      <span class="qName"></span>
+      <span class="qMeta">${t.missing?'reload':(n?n+(n>1?' notes':' note'):'')}</span>
+      <button class="qDel" aria-label="Remove from queue">✕</button>`;
+    d.querySelector('.qName').textContent=t.name;
+    d.onclick=e=>{
+      if(e.target.closest('.qDel'))return;
+      if(i!==qIndex) loadTrack(i,{autoplay:isPlaying()});
+    };
+    d.querySelector('.qDel').onclick=e=>{ e.stopPropagation(); removeTrack(i); };
+    list.appendChild(d);
+  });
+}
+
 /* ================= NOTES LIST ================= */
 let memoPlayer=null;
+
+/* One row. `group` carries which track the note belongs to, so a note in a
+   track that isn't playing still knows where it came from. */
+function noteRow(n,group){
+  const d=document.createElement('div');
+  d.className='note'+(n.done?' done':'')+(n.flagged?' flagged':'');
+  const tags=(n.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  const hasMemo=n.hasMemo||n.memo;   // n.memo kept for backward-compat with pre-IDB notes
+  d.innerHTML=`
+    <button class="ts">${fmt(n.t)}</button>
+    <div class="body">
+      ${tags?`<div class="tags">${tags}</div>`:''}
+      ${n.text?`<div class="txt"></div>`:''}
+      ${n.section?`<div class="sec">${n.section}</div>`:''}
+      ${hasMemo?`<button class="memoBtn">▶ memo</button>`:''}
+    </div>
+    <div class="ctrl">
+      <button class="checkBtn">✓</button>
+      <button class="iconBtn edit">✎</button>
+      <button class="iconBtn del">✕</button>
+    </div>`;
+  if(n.text) d.querySelector('.txt').textContent=n.text;
+
+  const isCurrent=()=>group.index===qIndex;
+  const saveGroup=()=>{
+    if(isCurrent()) persist();
+    else persistTrack(group.track.key,group.data);
+    renderQueue();renderNotes();layoutPins();
+  };
+
+  d.querySelector('.ts').onclick=async()=>{
+    if(!isCurrent()) await loadTrack(group.index,{autoplay:false});
+    seek(Math.max(0,n.t-1));
+    if(!isPlaying()) play();
+  };
+  d.querySelector('.checkBtn').onclick=()=>{ n.done=!n.done; saveGroup(); };
+  d.querySelector('.edit').onclick=async()=>{
+    // Editing needs the track's own markers for section lookup — switch first.
+    if(!isCurrent()) await loadTrack(group.index,{autoplay:false});
+    openSheet(n);
+  };
+  d.querySelector('.del').onclick=()=>{
+    idbDelMemo(n.id);
+    // splice, not filter — `notes` and notesByTrack[key] are the same array
+    // for the current track, and rebinding would silently desync them.
+    const i=group.data.notes.findIndex(x=>x.id===n.id);
+    if(i>-1) group.data.notes.splice(i,1);
+    saveGroup();
+  };
+  const mb=d.querySelector('.memoBtn');
+  if(mb) mb.onclick=async()=>{
+    pauseAudio();
+    if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
+    let src=n.memo;   // legacy in-session URL
+    if(!src && n.hasMemo){
+      const rec=await idbGetMemo(n.id);
+      if(!rec){ toast('Memo missing from storage'); return; }
+      src=URL.createObjectURL(rec.blob);
+    }
+    memoPlayer=new Audio(src);
+    memoPlayer.play().catch(()=>toast('Could not play memo here'));
+  };
+  return d;
+}
+
+function noteGroups(){
+  if(queue.length) return queue.map((t,i)=>({track:t,index:i,data:notesFor(t.key)}));
+  // Pre-queue / legacy single-track session
+  return [{track:{key:storageKey(),name:fileName},index:0,data:{notes,markers}}];
+}
+
 function renderNotes(){
   const list=$('noteList');list.innerHTML='';
-  $('noteCount').textContent=notes.length?`${notes.filter(n=>n.done).length}/${notes.length} fixed`:'';
-  if(!notes.length){
+  const groups=noteGroups();
+  let total=0,done=0;
+  for(const g of groups){ total+=g.data.notes.length; done+=g.data.notes.filter(n=>n.done).length; }
+  $('noteCount').textContent=total?`${done}/${total} fixed`:'';
+  if(!total){
     list.innerHTML='<div class="emptyNotes">No notes yet. Press play, then <b>pause on your headphones</b> when something bugs you — the mic starts and pins a note 3 seconds back.</div>';
     return;
   }
-  for(const n of notes){
-    const d=document.createElement('div');
-    d.className='note'+(n.done?' done':'')+(n.flagged?' flagged':'');
-    const tags=(n.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
-    const hasMemo=n.hasMemo||n.memo;   // n.memo kept for backward-compat with pre-IDB notes
-    d.innerHTML=`
-      <button class="ts">${fmt(n.t)}</button>
-      <div class="body">
-        ${tags?`<div class="tags">${tags}</div>`:''}
-        ${n.text?`<div class="txt"></div>`:''}
-        ${n.section?`<div class="sec">${n.section}</div>`:''}
-        ${hasMemo?`<button class="memoBtn">▶ memo</button>`:''}
-      </div>
-      <div class="ctrl">
-        <button class="checkBtn">✓</button>
-        <button class="iconBtn edit">✎</button>
-        <button class="iconBtn del">✕</button>
-      </div>`;
-    if(n.text) d.querySelector('.txt').textContent=n.text;
-    d.querySelector('.ts').onclick=()=>{seek(Math.max(0,n.t-1)); if(!isPlaying()) play();};
-    d.querySelector('.checkBtn').onclick=()=>{n.done=!n.done;persist();renderNotes();layoutPins();};
-    d.querySelector('.edit').onclick=()=>openSheet(n);
-    d.querySelector('.del').onclick=()=>{
-      idbDelMemo(n.id);
-      notes=notes.filter(x=>x.id!==n.id);
-      persist();renderNotes();layoutPins();
-    };
-    const mb=d.querySelector('.memoBtn');
-    if(mb) mb.onclick=async()=>{
-      pauseAudio();
-      if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
-      let src=n.memo;   // legacy in-session URL
-      if(!src && n.hasMemo){
-        const rec=await idbGetMemo(n.id);
-        if(!rec){ toast('Memo missing from storage'); return; }
-        src=URL.createObjectURL(rec.blob);
-      }
-      memoPlayer=new Audio(src);
-      memoPlayer.play().catch(()=>toast('Could not play memo here'));
-    };
-    list.appendChild(d);
+  const multi=queue.length>1;
+  for(const g of groups){
+    if(!g.data.notes.length) continue;
+    if(multi){
+      const h=document.createElement('div');
+      h.className='trackGroup'+(g.index===qIndex?' on':'');
+      h.innerHTML=`<span class="tgNum">${String(g.index+1).padStart(2,'0')}</span><span class="tgName"></span><span class="tgCount">${g.data.notes.length}</span>`;
+      h.querySelector('.tgName').textContent=g.track.name;
+      list.appendChild(h);
+    }
+    for(const n of g.data.notes) list.appendChild(noteRow(n,g));
   }
 }
 
@@ -1269,13 +1606,17 @@ if('serviceWorker' in navigator){
 }
 
 $('exportBtn').onclick=async()=>{
-  if(!notes.length){toast('Nothing to export yet');return;}
-  let out=`NOTED — ${fileName}\n${new Date().toLocaleDateString()}\n\n`;
-  for(const n of notes){
-    out+=`${fmt(n.t)}`;
-    if(n.section) out+=` (${n.section})`;
-    if(n.tags.length) out+=` [${n.tags.join(', ')}]`;
-    out+=` ${n.done?'✓ ':''}— ${n.text||((n.memo||n.hasMemo)?'(voice memo)':'')}\n`;
+  const groups=noteGroups().filter(g=>g.data.notes.length);
+  if(!groups.length){toast('Nothing to export yet');return;}
+  let out=`noted 1.0\n${new Date().toLocaleDateString()}\n`;
+  for(const g of groups){
+    out+=`\n${g.track.name}\n`;
+    for(const n of g.data.notes){
+      out+=`${fmt(n.t)}`;
+      if(n.section) out+=` (${n.section})`;
+      if(n.tags && n.tags.length) out+=` [${n.tags.join(', ')}]`;
+      out+=` ${n.done?'✓ ':''}— ${n.text||((n.memo||n.hasMemo)?'(voice memo)':'')}\n`;
+    }
   }
   try{
     await navigator.clipboard.writeText(out);
