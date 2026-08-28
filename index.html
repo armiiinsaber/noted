@@ -578,6 +578,32 @@
   }
   .sheetActions .save:hover{background:var(--accent-strong)}
 
+  /* ---------- diagnostics panel (triple-tap the timecode) ---------- */
+  #dbgOverlay{
+    position:fixed;left:0;right:0;bottom:0;height:46vh;z-index:120;
+    background:rgba(8,8,8,.97);border-top:1px solid var(--line-strong);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:none;flex-direction:column;gap:8px;
+  }
+  #dbgOverlay.on{display:flex}
+  .dbgHead{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted);
+  }
+  .dbgHead .dbgBtns{display:flex;gap:8px}
+  .dbgHead button{
+    background:none;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--ui);font-size:10px;font-weight:500;letter-spacing:.14em;
+    text-transform:uppercase;padding:5px 10px;border-radius:6px;cursor:pointer;
+  }
+  .dbgHead button:hover{color:var(--ink);border-color:var(--line-strong)}
+  #dbgLog{
+    flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
+    line-height:1.55;color:var(--dim);white-space:pre-wrap;word-break:break-all;
+  }
+
   #toast{
     position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99;
     background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);
@@ -777,6 +803,18 @@
 
 <div id="toast"></div>
 
+<div id="dbgOverlay">
+  <div class="dbgHead">
+    <span>Diagnostics</span>
+    <span class="dbgBtns">
+      <button id="dbgCopy">Copy</button>
+      <button id="dbgClear">Clear</button>
+      <button id="dbgClose">Close</button>
+    </span>
+  </div>
+  <pre id="dbgLog"></pre>
+</div>
+
 <script>
 const $=id=>document.getElementById(id);
 const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this','Flagged'];
@@ -898,6 +936,29 @@ function fmt(t,dec){t=Math.max(0,t||0);const m=Math.floor(t/60),s=t-m*60;
   return dec?`${m}:${s.toFixed(1).padStart(4,'0')}`:`${m}:${String(Math.floor(s)).padStart(2,'0')}`;}
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';
   clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600);}
+
+/* ---------- on-device diagnostics ----------
+   Every MediaSession action, listening transition, mic acquire/release and
+   play() rejection lands here. Triple-tap the big timecode to open the
+   panel on the phone; Copy puts the whole log on the clipboard. The tail
+   survives reload in localStorage so a crash still leaves evidence. */
+const DBG_KEY=STORAGE_PREFIX+'debuglog';
+let dbgLines=[];
+try{
+  const prev=localStorage.getItem(DBG_KEY);
+  if(prev) dbgLines.push('— previous session —',...prev.split('\n').slice(-80),'— this session —');
+}catch(e){}
+function dbg(msg){
+  const t=new Date();
+  dbgLines.push(t.toTimeString().slice(0,8)+'.'+String(t.getMilliseconds()).padStart(3,'0')+' '+msg);
+  if(dbgLines.length>400) dbgLines.splice(0,dbgLines.length-400);
+  try{ localStorage.setItem(DBG_KEY,dbgLines.slice(-150).join('\n')); }catch(e){}
+  const el=$('dbgLog');
+  if(el && $('dbgOverlay').classList.contains('on')){
+    el.textContent=dbgLines.join('\n'); el.scrollTop=el.scrollHeight;
+  }
+}
+dbg('boot standalone='+(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 /* Storage key is derived from the track name — unchanged from the
    single-track scheme, so sessions saved before the queue still restore. */
 function trackKey(name){return STORAGE_PREFIX+String(name||'').replace(/[\s\/\\'"]+/g,'_').slice(0,150);}
@@ -983,8 +1044,41 @@ function setTrackSrc(file){
   el.load();
 }
 
-function play(){ if(!audioEl)return; audioEl.play().catch(()=>{}); }
-function pauseAudio(){ if(!audioEl||audioEl.paused)return; try{audioEl.pause();}catch(e){} }
+/* play() must survive the moment right after the mic lets go: iOS can
+   reject the first attempt while it re-routes audio (AirPods hop from the
+   call profile back to playback), so rejections are logged and retried.
+   A newer pause() cancels any retries still in flight. */
+let playToken=0;
+function play(src){
+  if(!audioEl)return;
+  const tok=++playToken;
+  const attempt=n=>{
+    if(tok!==playToken)return;
+    audioEl.play().then(()=>{ if(n>1) dbg('play OK on attempt '+n); }).catch(err=>{
+      dbg('play() rejected'+(src?' ['+src+']':'')+' try '+n+'/4: '+err.name+(err.message?' — '+err.message:''));
+      if(tok!==playToken)return;
+      if(n<4) setTimeout(()=>attempt(n+1),300);
+      else toast('Couldn’t resume — tap ▶');
+    });
+  };
+  attempt(1);
+}
+function pauseAudio(){ playToken++; if(!audioEl||audioEl.paused)return; try{audioEl.pause();}catch(e){} }
+/* THE resume path for pause-to-talk. Order is everything on iOS: an active
+   SpeechRecognition / getUserMedia capture holds the audio route, and the
+   element's play() can keep rejecting until it is released. So: stop the
+   mic and commit the note FIRST, then start playback. (The old flow did
+   the reverse — waited for the 'play' event to close the mic — which
+   deadlocks: play can't start while the mic holds the route, and the mic
+   only stops on play.) */
+function resumePlayback(src){
+  dbg('resume ['+src+'] listen='+listenState);
+  if(listenState==='listening'){
+    try{ endListening({commit:true}); }
+    catch(e){ dbg('endListening threw: '+(e&&e.message)); }
+  }
+  play(src);
+}
 /* A seek that lands before the new track's metadata is parked and replayed
    from 'loadedmetadata' — jumping to a note on a not-yet-current track needs
    this now that nothing waits on the waveform decode. */
@@ -1021,12 +1115,12 @@ function setupMediaSessionHandlers(){
   if(!('mediaSession' in navigator))return;
   const set=(a,h)=>{ try{ navigator.mediaSession.setActionHandler(a,h); }catch(e){} };
   const multi=queue.length>1;
-  set('play',()=>play());
-  set('pause',()=>pauseAudio());
-  set('seekbackward',multi?null:e=>seek(curTime()-((e&&e.seekOffset)||10)));
-  set('seekforward', multi?null:e=>seek(curTime()+((e&&e.seekOffset)||10)));
-  set('nexttrack', multi?()=>nextTrack(true):null);
-  set('previoustrack', multi?()=>prevTrack(true):null);
+  set('play',()=>{ dbg('MS action: play'); resumePlayback('headphones'); });
+  set('pause',()=>{ dbg('MS action: pause'); pauseAudio(); });
+  set('seekbackward',multi?null:e=>{ dbg('MS action: seekbackward'); seek(curTime()-((e&&e.seekOffset)||10)); });
+  set('seekforward', multi?null:e=>{ dbg('MS action: seekforward'); seek(curTime()+((e&&e.seekOffset)||10)); });
+  set('nexttrack', multi?()=>{ dbg('MS action: nexttrack'); nextTrack(true); }:null);
+  set('previoustrack', multi?()=>{ dbg('MS action: previoustrack'); prevTrack(true); }:null);
 }
 /* Skip is skip, never pause: both paths go through loadTrack, whose
    switchingTrack guard keeps the src-swap 'pause' event out of the mic flow.
@@ -1107,6 +1201,7 @@ let fillingFlagId=null;   // when set, endListening fills that note instead of c
 let quietPause=false;     // transport button set: pause without opening the mic
 
 function onAudioPlay(){
+  dbg('audio event: play (listen='+listenState+')');
   hasPlayedOnce=true;
   setPlaybackState('playing');
   // Re-assert the full session on EVERY play — iOS drops metadata and
@@ -1123,6 +1218,8 @@ function onAudioPlay(){
 }
 
 function onAudioPause(){
+  dbg('audio event: pause (vis='+document.visibilityState+' switching='+switchingTrack
+    +' quiet='+quietPause+' listen='+listenState+')');
   setPlaybackState('paused');
   // Swapping src on a playing element emits 'pause'. That is bookkeeping,
   // not the user reaching for their headphones — never open the mic on it.
@@ -1154,6 +1251,7 @@ function onAudioPause(){
 }
 
 function onAudioEnded(){
+  dbg('audio event: ended (track '+(qIndex+1)+'/'+queue.length+')');
   // Commit any in-flight note to the track it was taken on, before advancing.
   if(listenState==='listening') endListening({commit:true});
   if(qIndex>-1 && qIndex<queue.length-1){
@@ -1176,6 +1274,13 @@ function beginListening(customTs){
   listenState='listening';
   listenKey=storageKey();
   pinTs=(customTs!=null) ? customTs : Math.max(0,curTime()-REWIND);
+  dbg('listening: begin @'+fmt(pinTs)+(fillingFlagId?' (flag fill)':''));
+  // Keep OUR media session current while paused-listening, so the next
+  // headphone play press still routes to our 'play' handler instead of the
+  // session going stale mid-capture.
+  setupMediaSessionHandlers();
+  assertMediaSessionMetadata();
+  setPlaybackState('paused');
   liveText='';
   usingMemo=false;
   memoChunks=[];
@@ -1194,22 +1299,28 @@ function endListening({commit}){
   if(listenState!=='listening')return;
   listenState='idle';
   $('listenOverlay').classList.remove('on');
-  // Recognition path: synchronous save
+  // Recognition path: synchronous save. The mic is released FIRST and the
+  // save is fenced — a throw in the save path must never leave the route
+  // held or block the caller from resuming playback.
   if(!usingMemo){
-    stopSR();
+    try{ stopSR(); }catch(e){ dbg('stopSR threw: '+(e&&e.message)); }
     const text=liveText.trim();
-    if(commit && text.length){
-      if(fillingFlagId) fillFlaggedNote(fillingFlagId, text, null, listenKey);
-      else saveVoiceNote(pinTs, text, null, listenKey);
-    }
+    dbg('listening: end commit='+!!commit+' path=SR text='+text.length+'ch');
+    try{
+      if(commit && text.length){
+        if(fillingFlagId) fillFlaggedNote(fillingFlagId, text, null, listenKey);
+        else saveVoiceNote(pinTs, text, null, listenKey);
+      }
+    }catch(e){ dbg('note save threw: '+(e&&e.message)); }
     liveText='';
     fillingFlagId=null;
     return;
   }
   // Memo fallback: blob arrives async in onstop — freeze the target now
+  dbg('listening: end commit='+!!commit+' path=memo');
   pendingKey=listenKey; pendingTs=pinTs; pendingFlagId=fillingFlagId;
   pendingCommit=!!commit;
-  stopMemo();
+  try{ stopMemo(); }catch(e){ dbg('stopMemo threw: '+(e&&e.message)); }
 }
 
 /* `key` targets the track the note was TAKEN on. For the current track,
@@ -1242,6 +1353,7 @@ function saveFlaggedNote(t){
   notes.push(n);
   notes.sort((a,b)=>a.t-b.t);
   persist();renderQueue();renderNotes();layoutPins();
+  dbg('flagged bookmark saved @'+fmt(t)+' (backgrounded pause)');
   // No toast — the app is backgrounded, user can't see it
 }
 
@@ -1295,6 +1407,7 @@ function startSR(){
       $('loTranscript').textContent=liveText;
     };
     sr.onerror=ev=>{
+      dbg('SR error: '+ev.error);
       if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){
         srExpectedEnd=true;
         stopSR();
@@ -1304,19 +1417,28 @@ function startSR(){
     sr.onend=()=>{
       // iOS often ends the session early — restart while still listening
       if(!srExpectedEnd && listenState==='listening'){
+        dbg('SR ended early — restarting');
         try{ sr.start(); }catch(e){/* another start in flight; ignore */}
       }
     };
     sr.start();
+    dbg('SR started');
   }catch(e){
+    dbg('SR start threw: '+(e&&e.message)+' — memo fallback');
     startMemo();
   }
 }
 function stopSR(){
   if(sr){
     srExpectedEnd=true;
-    try{sr.onresult=null;sr.onerror=null;sr.onend=null;sr.stop();}catch(e){}
+    try{sr.onresult=null;sr.onerror=null;sr.onend=null;}catch(e){}
+    // abort(), not stop(): stop() lingers waiting for a final result while
+    // its capture session keeps holding the audio route — abort releases
+    // the mic immediately, which is what lets play() succeed right after.
+    // The transcript is already in liveText from the interim results.
+    try{ sr.abort(); }catch(e){ try{ sr.stop(); }catch(e2){} }
     sr=null;
+    dbg('SR released');
   }
 }
 
@@ -1328,7 +1450,8 @@ async function startMemo(){
   const tr=$('loTranscript');
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    if(memoAborted){ stream.getTracks().forEach(t=>t.stop()); return; }
+    dbg('memo: mic stream acquired');
+    if(memoAborted){ stream.getTracks().forEach(t=>t.stop()); dbg('memo: mic released (aborted)'); return; }
     memoStream=stream;
     memoChunks=[];
     memoRec=new MediaRecorder(memoStream);
@@ -1336,6 +1459,7 @@ async function startMemo(){
     memoRec.onstop=()=>{
       const blob=new Blob(memoChunks,{type:memoRec.mimeType||'audio/webm'});
       if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
+      dbg('memo: mic released, blob='+blob.size+'B commit='+pendingCommit);
       memoRec=null;
       // Use the frozen target, not the live globals — the session may have
       // advanced to another track while the recorder was flushing.
@@ -1368,10 +1492,44 @@ function stopMemo(){
 }
 
 /* ---------- overlay's save button (on-screen backup for play) ---------- */
-$('loSave').onclick=()=>play();
+$('loSave').onclick=()=>resumePlayback('save-button');
+
+/* ---------- diagnostics panel wiring (triple-tap the timecode) ---------- */
+let dbgTaps=[];
+document.querySelector('.timecode').addEventListener('click',()=>{
+  const now=Date.now();
+  dbgTaps=dbgTaps.filter(t=>now-t<900);
+  dbgTaps.push(now);
+  if(dbgTaps.length>=3){
+    dbgTaps=[];
+    const o=$('dbgOverlay');
+    o.classList.toggle('on');
+    if(o.classList.contains('on')){
+      $('dbgLog').textContent=dbgLines.join('\n');
+      $('dbgLog').scrollTop=1e9;
+    }
+  }
+});
+$('dbgClose').onclick=()=>$('dbgOverlay').classList.remove('on');
+$('dbgClear').onclick=()=>{
+  dbgLines=[];
+  try{ localStorage.removeItem(DBG_KEY); }catch(e){}
+  $('dbgLog').textContent='';
+};
+$('dbgCopy').onclick=async()=>{
+  const out=dbgLines.join('\n');
+  try{ await navigator.clipboard.writeText(out); toast('Log copied'); }
+  catch(e){
+    const ta=document.createElement('textarea');
+    ta.value=out;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');ta.remove();
+    toast('Log copied');
+  }
+};
 
 /* ---------- Visibility change: re-acquire wake + offer flag fill ---------- */
 document.addEventListener('visibilitychange',()=>{
+  dbg('visibility: '+document.visibilityState);
   if(document.visibilityState!=='visible')return;
   // Re-acquire wake lock (auto-released when hidden)
   if(audioEl && !wakeLock) requestWake();
@@ -1447,6 +1605,7 @@ async function loadTrack(i,{autoplay}={}){
   if(!t) return;
   if(!t.file){ t.missing=true; renderQueue(); toast('That track needs re-loading'); return; }
   switchingTrack=true;
+  dbg('loadTrack '+(i+1)+'/'+queue.length+' autoplay='+!!autoplay);
   if(listenState==='listening'){
     // A skip while the mic is open saves like play does: the in-flight note
     // commits to the track it was taken on (listenKey / the frozen memo

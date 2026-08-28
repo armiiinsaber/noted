@@ -1,4 +1,4 @@
-const CACHE='noted-v7';
+const CACHE='noted-v8';
 const SHELL=['./','./index.html','./manifest.json','./icon.svg','./artwork.png'];
 
 self.addEventListener('install',e=>{
