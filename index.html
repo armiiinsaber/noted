@@ -287,11 +287,16 @@
   }
 
   .transport{display:flex;align-items:center;justify-content:center;gap:22px;margin:36px 0 12px}
+  /* Five controls have to fit a 320px column when the queue is real */
+  .transport.multi{gap:11px}
+  .transport:not(.multi) .skip{display:none}
   .tBtn{
     background:none;border:1px solid var(--line);color:var(--ink);
     border-radius:50%;width:54px;height:54px;font-size:11px;font-weight:500;
     cursor:pointer;transition:border-color .2s;
   }
+  .tBtn.skip{width:44px;height:44px;font-size:9px;letter-spacing:.08em;color:var(--muted)}
+  .tBtn.skip:hover{color:var(--ink)}
   .tBtn:hover{border-color:var(--line-strong)}
   .tBtn:active{background:var(--surface)}
   /* Transport play/pause reads as a neutral control — pausing here does NOT
@@ -357,6 +362,12 @@
   /* Hidden for a single track — a one-item queue is just noise. */
   #queueWrap{display:none}
   #queueWrap.on{display:block}
+  /* ~8 rows visible; a 20-track ride scrolls inside its own box instead of
+     pushing the notes list off the bottom of the screen. */
+  #queueList{
+    max-height:352px;overflow-y:auto;
+    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  }
   .qItem{
     display:flex;align-items:center;gap:12px;
     padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer;
@@ -700,10 +711,12 @@
   <div class="sectionNow" id="sectionNow"></div>
   <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div></div>
 
-  <div class="transport">
+  <div class="transport" id="transport">
+    <button class="tBtn skip" id="prevBtn" aria-label="Previous track">◀◀</button>
     <button class="tBtn" id="back10">−10s</button>
     <button class="tBtn" id="playBtn">▶</button>
     <button class="tBtn" id="fwd10">+10s</button>
+    <button class="tBtn skip" id="nextBtn" aria-label="Next track">▶▶</button>
   </div>
   <div class="rateRow">
     <button class="rateChip" data-rate="0.75">0.75×</button>
@@ -872,6 +885,8 @@ let notes=[],markers=[],editingId=null,sheetTs=0,pickedTags=new Set();
    by virtue of living under that track's storage key. */
 let queue=[];          // [{key,name,file,missing}]
 let qIndex=-1;         // index into queue, -1 = nothing loaded
+let qScrolledIndex=-1; // last index auto-scrolled into view (must init before
+                       // restoreQueue's synchronous first renderQueue call)
 let notesByTrack={};   // key -> {notes,markers}  (all tracks, for the grouped list)
 
 /* ================= AUDIO ENGINE =================
@@ -953,6 +968,7 @@ function ensureAudioEl(){
       dur=audioEl.duration;
       $('tcTotal').textContent='/ '+fmt(dur);
       layoutPins();
+      if(pendingSeek!=null){ const t=pendingSeek; pendingSeek=null; seek(t); }
     }
   });
   return audioEl;
@@ -968,8 +984,13 @@ function setTrackSrc(file){
 
 function play(){ if(!audioEl)return; audioEl.play().catch(()=>{}); }
 function pauseAudio(){ if(!audioEl||audioEl.paused)return; try{audioEl.pause();}catch(e){} }
+/* A seek that lands before the new track's metadata is parked and replayed
+   from 'loadedmetadata' — jumping to a note on a not-yet-current track needs
+   this now that nothing waits on the waveform decode. */
+let pendingSeek=null;
 function seek(t){
-  if(!audioEl||!isFinite(dur))return;
+  if(!audioEl)return;
+  if(!isFinite(dur)||dur<=0){ pendingSeek=t; return; }
   audioEl.currentTime=Math.max(0,Math.min(dur,t));
 }
 function setRate(r){ rate=r; if(audioEl)audioEl.playbackRate=r; }
@@ -1041,16 +1062,23 @@ function setupMediaSessionHandlers(){
   // real queue so a single track keeps the plain two-button remote behaviour.
   try{
     const multi=queue.length>1;
-    navigator.mediaSession.setActionHandler('nexttrack', multi?()=>{
-      if(qIndex>-1 && qIndex<queue.length-1) loadTrack(qIndex+1,{autoplay:true});
-    }:null);
-    navigator.mediaSession.setActionHandler('previoustrack', multi?()=>{
-      // Restart the current track first, as every music player does; only
-      // step back a track if we're still near its start.
-      if(curTime()>3){ seek(0); return; }
-      if(qIndex>0) loadTrack(qIndex-1,{autoplay:true});
-    }:null);
+    navigator.mediaSession.setActionHandler('nexttrack', multi?()=>nextTrack(true):null);
+    navigator.mediaSession.setActionHandler('previoustrack', multi?()=>prevTrack(true):null);
   }catch(e){}
+}
+/* Skip is skip, never pause: both paths go through loadTrack, whose
+   switchingTrack guard keeps the src-swap 'pause' event out of the mic flow.
+   If the mic IS open when a skip lands, loadTrack commits the in-flight note
+   to the track it was taken on before advancing. */
+function nextTrack(autoplay){
+  if(qIndex>-1 && qIndex<queue.length-1) loadTrack(qIndex+1,{autoplay});
+}
+function prevTrack(autoplay){
+  // Restart the current track first, as every music player does; only
+  // step back a track if we're still within its first 3 seconds.
+  if(curTime()>3){ seek(0); return; }
+  if(qIndex>0) loadTrack(qIndex-1,{autoplay});
+  else seek(0);
 }
 async function assertMediaSessionMetadata(){
   if(!('mediaSession' in navigator))return;
@@ -1064,7 +1092,9 @@ async function assertMediaSessionMetadata(){
     navigator.mediaSession.metadata=new MediaMetadata({
       title:fileName||'noted 1.0',
       artist:'noted 1.0',
-      album:'',
+      // Queue position on the lock-screen card — the one place a rider can
+      // see how deep into a 20-track ride they are without unlocking.
+      album:queue.length>1?`${qIndex+1} / ${queue.length}`:'',
       artwork:art
     });
   }catch(e){}
@@ -1099,8 +1129,13 @@ async function releaseWake(){
 /* ================= PAUSE-TO-TALK STATE MACHINE ================= */
 let listenState='idle';   // 'idle' | 'listening'
 let pinTs=0, liveText='';
+let listenKey='';         // storage key of the track the mic opened on
 let sr=null, srExpectedEnd=false;
 let memoRec=null, memoStream=null, memoChunks=[], usingMemo=false, pendingCommit=false;
+/* The memo blob arrives async in onstop — by then a skip or auto-advance may
+   have moved the session to another track, so the save target is frozen here
+   at endListening time rather than read from globals at commit time. */
+let pendingKey='', pendingTs=0, pendingFlagId=null;
 let fillingFlagId=null;   // when set, endListening fills that note instead of creating one
 let quietPause=false;     // transport button set: pause without opening the mic
 
@@ -1167,6 +1202,7 @@ function findFlagTs(id){
 
 function beginListening(customTs){
   listenState='listening';
+  listenKey=storageKey();
   pinTs=(customTs!=null) ? customTs : Math.max(0,curTime()-REWIND);
   liveText='';
   usingMemo=false;
@@ -1191,30 +1227,37 @@ function endListening({commit}){
     stopSR();
     const text=liveText.trim();
     if(commit && text.length){
-      if(fillingFlagId) fillFlaggedNote(fillingFlagId, text, null);
-      else saveVoiceNote(pinTs, text, null);
+      if(fillingFlagId) fillFlaggedNote(fillingFlagId, text, null, listenKey);
+      else saveVoiceNote(pinTs, text, null, listenKey);
     }
     liveText='';
     fillingFlagId=null;
     return;
   }
-  // Memo fallback: blob arrives async in onstop — decide there
+  // Memo fallback: blob arrives async in onstop — freeze the target now
+  pendingKey=listenKey; pendingTs=pinTs; pendingFlagId=fillingFlagId;
   pendingCommit=!!commit;
   stopMemo();
 }
 
-function saveVoiceNote(t, text, memoBlob){
+/* `key` targets the track the note was TAKEN on. For the current track,
+   notesFor(key) returns the same {notes,markers} object the globals point at,
+   so the two paths can never diverge. */
+function saveVoiceNote(t, text, memoBlob, key){
+  key=key||storageKey();
+  const data=notesFor(key);
   const n={
     id:Date.now()+''+Math.random().toString(16).slice(2,6),
-    t, text, tags:[], section:sectionAt(t), done:false
+    t, text, tags:[], section:sectionAt(t,data.markers), done:false
   };
   if(memoBlob){
     n.hasMemo=true;
-    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persist(); renderNotes(); });
+    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persistTrack(key,data); renderNotes(); });
   }
-  notes.push(n);
-  notes.sort((a,b)=>a.t-b.t);
-  persist();renderQueue();renderNotes();layoutPins();
+  data.notes.push(n);
+  data.notes.sort((a,b)=>a.t-b.t);
+  persistTrack(key,data);
+  renderQueue();renderNotes();layoutPins();
   toast('Saved at '+fmt(t));
 }
 
@@ -1230,18 +1273,21 @@ function saveFlaggedNote(t){
   // No toast — the app is backgrounded, user can't see it
 }
 
-function fillFlaggedNote(id, text, memoBlob){
-  const n=notes.find(x=>x.id===id);
+function fillFlaggedNote(id, text, memoBlob, key){
+  key=key||storageKey();
+  const data=notesFor(key);
+  const n=data.notes.find(x=>x.id===id);
   if(!n)return;
   n.text=text || (memoBlob ? '(voice memo)' : FLAG_TEXT);
   if(memoBlob){
     n.hasMemo=true;
-    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persist(); renderNotes(); });
+    idbPutMemo(n.id,memoBlob).catch(()=>{ n.hasMemo=false; persistTrack(key,data); renderNotes(); });
   }
   n.tags=(n.tags||[]).filter(t=>t!=='Flagged');
   n.flagged=false;
-  n.section=sectionAt(n.t);
-  persist();renderQueue();renderNotes();layoutPins();
+  n.section=sectionAt(n.t,data.markers);
+  persistTrack(key,data);
+  renderQueue();renderNotes();layoutPins();
   toast('Flag filled at '+fmt(n.t));
 }
 
@@ -1319,11 +1365,13 @@ async function startMemo(){
       const blob=new Blob(memoChunks,{type:memoRec.mimeType||'audio/webm'});
       if(memoStream){ memoStream.getTracks().forEach(t=>t.stop()); memoStream=null; }
       memoRec=null;
+      // Use the frozen target, not the live globals — the session may have
+      // advanced to another track while the recorder was flushing.
       if(pendingCommit && blob.size>0){
-        if(fillingFlagId) fillFlaggedNote(fillingFlagId, '', blob);
-        else saveVoiceNote(pinTs, '', blob);
+        if(pendingFlagId) fillFlaggedNote(pendingFlagId, '', blob, pendingKey);
+        else saveVoiceNote(pendingTs, '', blob, pendingKey);
       }
-      memoChunks=[]; pendingCommit=false;
+      memoChunks=[]; pendingCommit=false; pendingFlagId=null;
       fillingFlagId=null;
     };
     memoRec.start();
@@ -1412,7 +1460,14 @@ async function addFiles(fileList,{replace}={}){
   persistQueue();
   renderQueue();
   if(qIndex===-1) await loadTrack(startAt,{autoplay:false});
-  else { renderNotes(); if(added) toast(`${added} track${added>1?'s':''} queued`); }
+  else {
+    renderNotes();
+    // The queue may have just become (or grown as) a real queue — arm the
+    // remote skip handlers and refresh the lock-screen position readout.
+    setupMediaSessionHandlers();
+    assertMediaSessionMetadata();
+    if(added) toast(`${added} track${added>1?'s':''} queued`);
+  }
 }
 
 async function loadTrack(i,{autoplay}={}){
@@ -1421,14 +1476,14 @@ async function loadTrack(i,{autoplay}={}){
   if(!t.file){ t.missing=true; renderQueue(); toast('That track needs re-loading'); return; }
   switchingTrack=true;
   if(listenState==='listening'){
-    // Discard in-flight listening — the note belonged to the outgoing track
-    $('listenOverlay').classList.remove('on');
-    stopSR(); stopMemo();
-    listenState='idle'; liveText='';
+    // A skip while the mic is open saves like play does: the in-flight note
+    // commits to the track it was taken on (listenKey / the frozen memo
+    // target), then the queue advances. Silence still saves nothing.
+    endListening({commit:true});
   }
   persist();                       // flush outgoing track's notes before switching
   qIndex=i; fileName=t.name;
-  peaks=null; dur=0;
+  peaks=null; dur=0; pendingSeek=null;
   setTrackSrc(t.file);
   fillingFlagId=null; quietPause=false;
   $('emptyState').style.display='none';
@@ -1452,12 +1507,32 @@ async function loadTrack(i,{autoplay}={}){
   // running. Decoding first would stall every auto-advance by seconds —
   // exactly when the phone is in a pocket and nobody can intervene.
   $('loadStatus').textContent='';
-  try{
-    const r=await decodePeaks(t.file);
-    if(qIndex===i){ peaks=r.peaks; if(!dur) dur=r.duration; drawWave(); layoutPins(); }
-  }catch(e){
-    if(qIndex===i){ peaks=null; drawWave(); toast('Waveform unavailable for this file'); }
-  }
+  schedulePeaks(t,i);
+}
+
+/* Lazy, once-per-track waveform decode. decodeAudioData holds the whole
+   track in memory while it runs, so during rapid skips the debounce below
+   collapses every superseded request — only the track the user settles on
+   decodes, and never more than one decode is in flight. Cached peaks are
+   460 floats per track (a 20-track ride costs ~40KB), so revisits are free. */
+const peaksCache=new Map();   // trackKey -> {peaks,duration}
+let peaksGen=0, peaksChain=Promise.resolve();
+function schedulePeaks(t,i){
+  const cached=peaksCache.get(t.key);
+  if(cached){ peaks=cached.peaks; if(!dur) dur=cached.duration; drawWave(); layoutPins(); return; }
+  const gen=++peaksGen;
+  peaksChain=peaksChain.then(async()=>{
+    await new Promise(r=>setTimeout(r,200));   // let a burst of skips settle
+    if(gen!==peaksGen || qIndex!==i || !t.file) return;
+    try{
+      const r=await decodePeaks(t.file);
+      peaksCache.set(t.key,r);
+      if(peaksCache.size>40) peaksCache.delete(peaksCache.keys().next().value);
+      if(qIndex===i){ peaks=r.peaks; if(!dur) dur=r.duration; drawWave(); layoutPins(); }
+    }catch(e){
+      if(qIndex===i){ peaks=null; drawWave(); toast('Waveform unavailable for this file'); }
+    }
+  });
 }
 
 function removeTrack(i){
@@ -1479,6 +1554,8 @@ function removeTrack(i){
   if(wasCurrent){ loadTrack(Math.min(i,queue.length-1),{autoplay:isPlaying()}); return; }
   if(i<qIndex) qIndex--;
   persistQueue();renderQueue();renderNotes();
+  setupMediaSessionHandlers();   // may have dropped back to a single track
+  assertMediaSessionMetadata();
 }
 
 $('fileInput').addEventListener('change',e=>{ addFiles(e.target.files,{replace:true}); e.target.value=''; });
@@ -1557,6 +1634,10 @@ $('playBtn').onclick=()=>{
 };
 $('back10').onclick=()=>seek(curTime()-10);
 $('fwd10').onclick=()=>seek(curTime()+10);
+// On-screen skips mirror the headphone gestures; keep the paused/playing
+// state across the switch instead of forcing playback like the remote does.
+$('nextBtn').onclick=()=>nextTrack(isPlaying());
+$('prevBtn').onclick=()=>prevTrack(isPlaying());
 document.querySelectorAll('.rateChip').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.rateChip').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');setRate(parseFloat(b.dataset.rate));
@@ -1572,9 +1653,9 @@ function tick(){
 requestAnimationFrame(tick);
 
 /* ================= MARKERS ================= */
-function sectionAt(t){
+function sectionAt(t,marks){
   let best=null;
-  for(const m of markers) if(m.t<=t && (!best||m.t>best.t)) best=m;
+  for(const m of (marks||markers)) if(m.t<=t && (!best||m.t>best.t)) best=m;
   return best?best.name:null;
 }
 $('markerBtn').onclick=()=>{
@@ -1684,6 +1765,7 @@ $('saveNote').onclick=()=>{
 /* ================= QUEUE LIST ================= */
 function renderQueue(){
   const wrap=$('queueWrap'),list=$('queueList');
+  $('transport').classList.toggle('multi',queue.length>1);
   if(queue.length<2){ wrap.classList.remove('on'); return; }
   wrap.classList.add('on');
   $('queueCount').textContent=`${qIndex>-1?qIndex+1:0} / ${queue.length}`;
@@ -1705,6 +1787,15 @@ function renderQueue(){
     d.querySelector('.qDel').onclick=e=>{ e.stopPropagation(); removeTrack(i); };
     list.appendChild(d);
   });
+  // Keep the current track visible in the scrollbox — but only when the
+  // TRACK changed, so a note save doesn't yank a hand-scrolled list around.
+  if(qIndex!==qScrolledIndex){
+    qScrolledIndex=qIndex;
+    const cur=list.children[qIndex];
+    if(cur && list.scrollHeight>list.clientHeight){
+      list.scrollTop=Math.max(0,cur.offsetTop-list.offsetTop-list.clientHeight/2+cur.offsetHeight/2);
+    }
+  }
 }
 
 /* ================= NOTES LIST ================= */
