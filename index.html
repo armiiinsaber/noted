@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="noted 1.0">
 <meta name="theme-color" content="#080808">
-<title>noted 1.0 — Melomaniac Labs</title>
+<title>noted 1.0</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -61,7 +61,7 @@
     overscroll-behavior:none;
     padding-bottom:env(safe-area-inset-bottom);
   }
-  p,h1,.hint,.emptyNotes,.eyebrow,.lo-hint,.lo-transcript{text-wrap:balance}
+  p,h1,.hint,.emptyNotes,.lo-hint,.lo-transcript{text-wrap:balance}
 
   /* The display face is reserved for the wordmark and nothing else. Every
      other string in the app is something a user reads — headlines, taglines,
@@ -91,12 +91,6 @@
     padding:22px 22px 10px;gap:14px;
   }
   .brand{display:flex;flex-direction:column;gap:6px;min-width:0}
-  .eyebrow{
-    display:flex;align-items:center;gap:.6rem;
-    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
-    color:rgba(var(--accent-rgb),.6);
-  }
-  .eyebrow::before{content:'';width:22px;height:1px;background:rgba(var(--accent-rgb),.4)}
   .logo{
     font-size:30px;font-weight:var(--display-wght);letter-spacing:-.015em;line-height:.95;
     color:var(--accent);
@@ -119,11 +113,6 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;position:relative;
     padding:var(--s5) 24px calc(var(--s5) + env(safe-area-inset-bottom));
-  }
-  .lp-eyebrow{
-    font-size:10px;font-weight:500;letter-spacing:.32em;text-transform:uppercase;
-    color:rgba(var(--accent-rgb),.6);
-    margin-bottom:var(--s4);
   }
   .lp-mark{
     font-size:clamp(58px,15vw,116px);
@@ -590,7 +579,6 @@
 
 <header>
   <div class="brand">
-    <div class="eyebrow">03 · Melomaniac Labs</div>
     <div class="logo">noted<span class="ver">1.0</span></div>
   </div>
   <div class="tagline">Talk to your mix.</div>
@@ -600,7 +588,6 @@
   <!-- Landing only. The app's own header is hidden here (body:not(.in-session))
        so the wordmark appears once, at hero scale, instead of twice. -->
   <section class="lp-hero">
-    <div class="lp-eyebrow">— 03 · Melomaniac Labs —</div>
     <h1 class="lp-mark">noted<span class="ver">1.0</span></h1>
     <div class="lp-stage">
       <canvas id="heroWave" aria-hidden="true"></canvas>
@@ -1000,13 +987,10 @@ function ensureIcon(){
   if(iconDataUrl) return Promise.resolve(iconDataUrl);
   if(iconPromise) return iconPromise;
   iconPromise=(async()=>{
-    // Melomaniac Serif for the wordmark, Inter for the eyebrow. Wait for both
-    // so the Media Session artwork doesn't ship in the fallback stack.
+    // Wait for the display face so the Media Session artwork doesn't ship
+    // in the fallback stack.
     try{
-      await Promise.all([
-        document.fonts.load('600 240px "Melomaniac Serif"'),
-        document.fonts.load('500 22px "Inter"')
-      ]);
+      await document.fonts.load('600 240px "Melomaniac Serif"');
     }catch(e){}
     try{
       const c=document.createElement('canvas');
@@ -1033,15 +1017,10 @@ function ensureIcon(){
       g.textAlign='left';
       g.fillStyle='#b8f06e';
       g.font=`600 ${size}px ${FACE}`;
-      g.fillText('noted',x0,262);
+      g.fillText('noted',x0,268);
       g.fillStyle='rgba(184,240,110,.55)';
       g.font=`600 ${verSize}px ${FACE}`;
-      g.fillText('1.0',x0+wName+gap,262);
-      g.textAlign='center';
-      // Eyebrow line — Inter, uppercase micro-tracking
-      g.fillStyle='rgba(184,240,110,.55)';
-      g.font='500 22px "Inter",-apple-system,BlinkMacSystemFont,sans-serif';
-      g.fillText('— 03 · MELOMANIAC LABS —',256,398);
+      g.fillText('1.0',x0+wName+gap,268);
       iconDataUrl=c.toDataURL('image/png');
     }catch(e){ iconDataUrl=null; }
     return iconDataUrl;
@@ -1085,7 +1064,7 @@ async function assertMediaSessionMetadata(){
     navigator.mediaSession.metadata=new MediaMetadata({
       title:fileName||'noted 1.0',
       artist:'noted 1.0',
-      album:'Melomaniac Labs',
+      album:'',
       artwork:art
     });
   }catch(e){}
