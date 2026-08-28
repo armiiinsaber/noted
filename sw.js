@@ -1,5 +1,5 @@
-const CACHE='noted-v6';
-const SHELL=['./','./index.html','./manifest.json','./icon.svg'];
+const CACHE='noted-v7';
+const SHELL=['./','./index.html','./manifest.json','./icon.svg','./artwork.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(

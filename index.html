@@ -968,6 +968,7 @@ function ensureAudioEl(){
       dur=audioEl.duration;
       $('tcTotal').textContent='/ '+fmt(dur);
       layoutPins();
+      updatePositionState();
       if(pendingSeek!=null){ const t=pendingSeek; pendingSeek=null; seek(t); }
     }
   });
@@ -992,8 +993,9 @@ function seek(t){
   if(!audioEl)return;
   if(!isFinite(dur)||dur<=0){ pendingSeek=t; return; }
   audioEl.currentTime=Math.max(0,Math.min(dur,t));
+  updatePositionState();
 }
-function setRate(r){ rate=r; if(audioEl)audioEl.playbackRate=r; }
+function setRate(r){ rate=r; if(audioEl)audioEl.playbackRate=r; updatePositionState(); }
 function curTime(){ return audioEl?audioEl.currentTime||0:0; }
 function isPlaying(){ return !!(audioEl && !audioEl.paused && !audioEl.ended); }
 
@@ -1002,69 +1004,29 @@ function uiPlayState(){
   $('noteBtn').classList.toggle('playing',isPlaying());
 }
 
-/* ---------- Now Playing artwork (chartreuse mark on the dark bg) ---------- */
-let iconDataUrl=null, iconPromise=null;
-function ensureIcon(){
-  if(iconDataUrl) return Promise.resolve(iconDataUrl);
-  if(iconPromise) return iconPromise;
-  iconPromise=(async()=>{
-    // Wait for the display face so the Media Session artwork doesn't ship
-    // in the fallback stack.
-    try{
-      await document.fonts.load('600 240px "Melomaniac Serif"');
-    }catch(e){}
-    try{
-      const c=document.createElement('canvas');
-      c.width=512;c.height=512;
-      const g=c.getContext('2d');
-      g.fillStyle='#080808';
-      g.fillRect(0,0,512,512);
-      g.textAlign='center';
-      g.textBaseline='middle';
-      // Wordmark in the house display face — Melomaniac Serif v0.1 — with the
-      // version set smaller and quieter beside it, mirroring the in-app logo.
-      // Sized so "noted" hits ~330px and the pair still reads at 96px scaling.
-      const FACE='"Melomaniac Serif","Times New Roman",serif';
-      g.font=`600 240px ${FACE}`;
-      const w0=g.measureText('noted').width || 1;
-      const size=240*330/w0;
-      const verSize=size*0.42;
-      const gap=size*0.16;
-      g.font=`600 ${size}px ${FACE}`;
-      const wName=g.measureText('noted').width;
-      g.font=`600 ${verSize}px ${FACE}`;
-      const wVer=g.measureText('1.0').width;
-      const x0=256-(wName+gap+wVer)/2;
-      g.textAlign='left';
-      g.fillStyle='#b8f06e';
-      g.font=`600 ${size}px ${FACE}`;
-      g.fillText('noted',x0,268);
-      g.fillStyle='rgba(184,240,110,.55)';
-      g.font=`600 ${verSize}px ${FACE}`;
-      g.fillText('1.0',x0+wName+gap,268);
-      iconDataUrl=c.toDataURL('image/png');
-    }catch(e){ iconDataUrl=null; }
-    return iconDataUrl;
-  })();
-  return iconPromise;
-}
-
-/* ---------- MediaSession (headphone buttons + lock-screen card) ---------- */
+/* ---------- MediaSession (headphone buttons + lock-screen card) ----------
+   The lock-screen card is load-bearing: it is how a rider drives the whole
+   app with the phone pocketed. Three iOS rules shape everything here:
+   1. Artwork must be a plain fetchable PNG. The old canvas-rendered data:
+      URL sat behind an async font load — if that stalled, metadata was
+      never set at all and iOS fell back to its generic card. artwork.png
+      is that same canvas render, shipped as a static file.
+   2. Metadata assertion must be SYNCHRONOUS — nothing awaited in front of
+      it — and repeated on every play and every track switch.
+   3. When seekbackward/seekforward are registered, the lock screen shows
+      ±10s buttons INSTEAD of track skips. With a queue, next/prev must
+      win, so the seek handlers are only registered for a single track. */
+const ARTWORK=[{src:new URL('artwork.png',location.href).href,sizes:'512x512',type:'image/png'}];
 function setupMediaSessionHandlers(){
   if(!('mediaSession' in navigator))return;
-  try{
-    navigator.mediaSession.setActionHandler('play',()=>play());
-    navigator.mediaSession.setActionHandler('pause',()=>pauseAudio());
-    navigator.mediaSession.setActionHandler('seekbackward',e=>seek(curTime()-((e&&e.seekOffset)||10)));
-    navigator.mediaSession.setActionHandler('seekforward',e=>seek(curTime()+((e&&e.seekOffset)||10)));
-  }catch(e){}
-  // Queue skip from the headphone remote / lock screen. Registered only for a
-  // real queue so a single track keeps the plain two-button remote behaviour.
-  try{
-    const multi=queue.length>1;
-    navigator.mediaSession.setActionHandler('nexttrack', multi?()=>nextTrack(true):null);
-    navigator.mediaSession.setActionHandler('previoustrack', multi?()=>prevTrack(true):null);
-  }catch(e){}
+  const set=(a,h)=>{ try{ navigator.mediaSession.setActionHandler(a,h); }catch(e){} };
+  const multi=queue.length>1;
+  set('play',()=>play());
+  set('pause',()=>pauseAudio());
+  set('seekbackward',multi?null:e=>seek(curTime()-((e&&e.seekOffset)||10)));
+  set('seekforward', multi?null:e=>seek(curTime()+((e&&e.seekOffset)||10)));
+  set('nexttrack', multi?()=>nextTrack(true):null);
+  set('previoustrack', multi?()=>prevTrack(true):null);
 }
 /* Skip is skip, never pause: both paths go through loadTrack, whose
    switchingTrack guard keeps the src-swap 'pause' event out of the mic flow.
@@ -1080,28 +1042,33 @@ function prevTrack(autoplay){
   if(qIndex>0) loadTrack(qIndex-1,{autoplay});
   else seek(0);
 }
-async function assertMediaSessionMetadata(){
+function assertMediaSessionMetadata(){
   if(!('mediaSession' in navigator))return;
   try{
-    const icon=await ensureIcon();
-    const art=icon?[
-      {src:icon,sizes:'512x512',type:'image/png'},
-      {src:icon,sizes:'256x256',type:'image/png'},
-      {src:icon,sizes:'96x96',type:'image/png'}
-    ]:[];
     navigator.mediaSession.metadata=new MediaMetadata({
       title:fileName||'noted 1.0',
       artist:'noted 1.0',
       // Queue position on the lock-screen card — the one place a rider can
       // see how deep into a 20-track ride they are without unlocking.
       album:queue.length>1?`${qIndex+1} / ${queue.length}`:'',
-      artwork:art
+      artwork:ARTWORK
     });
   }catch(e){}
 }
 function setPlaybackState(s){
   if(!('mediaSession' in navigator))return;
   try{ navigator.mediaSession.playbackState=s; }catch(e){}
+}
+/* Duration + live position for the lock-screen scrubber. Re-fed on play,
+   seek, rate change, and metadata load so the card never goes stale. */
+function updatePositionState(){
+  if(!('mediaSession' in navigator)||!navigator.mediaSession.setPositionState)return;
+  try{
+    if(isFinite(dur)&&dur>0)
+      navigator.mediaSession.setPositionState({
+        duration:dur,playbackRate:rate,position:Math.max(0,Math.min(curTime(),dur))
+      });
+  }catch(e){}
 }
 
 /* ---------- Screen Wake Lock (Ride Mode) ---------- */
@@ -1142,7 +1109,12 @@ let quietPause=false;     // transport button set: pause without opening the mic
 function onAudioPlay(){
   hasPlayedOnce=true;
   setPlaybackState('playing');
-  assertMediaSessionMetadata();  // re-assert every play — iOS resets sometimes
+  // Re-assert the full session on EVERY play — iOS drops metadata and
+  // handlers whenever it feels like it, and a stale session is exactly
+  // the generic lock-screen card this app cannot afford.
+  setupMediaSessionHandlers();
+  assertMediaSessionMetadata();
+  updatePositionState();
   requestWake();
   if(listenState==='listening'){
     endListening({commit:true});
@@ -1495,7 +1467,6 @@ async function loadTrack(i,{autoplay}={}){
   loadSaved();
   setupMediaSessionHandlers();
   assertMediaSessionMetadata();
-  ensureIcon().catch(()=>{});
   persistQueue();
   renderQueue();renderNotes();layoutPins();uiPlayState();
   if(autoplay){ hasPlayedOnce=true; play(); }
