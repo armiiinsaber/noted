@@ -5,662 +5,435 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Dark status bar text on the chartreuse ground; iOS takes the bar's colour from theme-color -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="noted 1.0">
-<meta name="theme-color" content="#080808">
+<meta name="theme-color" content="#B8F06E">
 <title>noted 1.0</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-  /* Melomaniac Serif v0.1 — self-hosted display face, synced from the
-     melomaniacstudios repo (type-experiment branch). Base is Bodoni Moda
-     (SIL OFL 1.1); modification recipe in that repo's DESIGN.md § 8.
-     Roman only — nothing in NOTED currently uses display italic. */
-  @font-face {
-    font-family: 'Melomaniac Serif';
-    src: url('./fonts/melomaniac-serif-v0.1.woff') format('woff'),
-         url('./fonts/melomaniac-serif-v0.1.ttf')  format('truetype');
-    font-weight: 100 900;
-    font-style: normal;
-    font-display: swap;
+  /* Bricolage Grotesque (SIL OFL 1.1, fonts/OFL-Bricolage-Grotesque.txt),
+     self-hosted. Cut to width 100, weights 400 to 600 and Latin, with the
+     optical size axis kept: big type draws from the tight display cut and
+     small UI text from the open text cut, automatically. */
+  @font-face{
+    font-family:'Bricolage Grotesque';
+    src:url('./fonts/bricolage-grotesque.woff2') format('woff2');
+    font-weight:400 600;font-style:normal;font-display:swap;
   }
+  /* One ground, one ink. Secondary text is ink at 70% (about 6:1 on the
+     ground); 30% is for marks that only need to be seen, never read. */
   :root{
-    --bg:#080808;
-    --surface:#0f0f0f;
-    --line:rgba(255,255,255,.07);
-    --line-strong:rgba(255,255,255,.16);
-    --ink:#ffffff;
-    --muted:rgba(255,255,255,.38);
-    /* The house's `dim` step, matched to echoes (#a6a499 over its ground).
-       noted's --muted sits a good deal darker than that, which is right for
-       incidental labels but too faint for a paragraph someone has to read. */
-    --dim:rgba(255,255,255,.62);
-    --dim2:rgba(255,255,255,.16);
-    --accent:#b8f06e;
-    --accent-strong:#cbff7e;
-    --accent-rgb:184,240,110;
-    --radius:8px;
-    --radius-sm:4px;
-    --ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    --display:'Melomaniac Serif','Times New Roman',Georgia,serif;
-    /* wght 600 across every display call site — same knob as the house
-       site uses via --house-serif-display-wght on melomaniacstudios. */
-    --display-wght:600;
+    --ground:#B8F06E;
+    --ink:#141310;
+    --ink-2:rgba(20,19,16,.7);
+    --ink-3:rgba(20,19,16,.3);
+    --line:rgba(20,19,16,.14);
+    --wash:rgba(20,19,16,.07);
+    --font:'Bricolage Grotesque',ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif;
+    --regular:400;
+    --bold:600;
+    --side:20px;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
+  html{height:100%;background:var(--ground)}
   body{
-    background:var(--bg);color:var(--ink);
-    font-family:var(--ui);
-    -webkit-font-smoothing:antialiased;
-    -webkit-text-size-adjust:100%;
-    overscroll-behavior:none;
-    padding-bottom:env(safe-area-inset-bottom);
-  }
-  p,h1,.hint,.emptyNotes,.lo-hint,.lo-transcript{text-wrap:balance}
-
-  /* The display face is reserved for the wordmark and nothing else. Every
-     other string in the app is something a user reads — headlines, taglines,
-     copy, labels, transcripts — and those are all Inter. */
-  .logo,.lp-mark{
-    font-family:var(--display);
+    min-height:100%;
+    background:var(--ground);color:var(--ink);
+    font-family:var(--font);font-size:16px;font-weight:var(--regular);line-height:1.45;
     font-optical-sizing:auto;
-    font-variation-settings:'wght' var(--display-wght);
-    font-weight:var(--display-wght);
+    -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;
+    overscroll-behavior:none;
   }
-  /* Version sits with the wordmark: same face, smaller, quieter. The gap is
-     .55em of the SMALL size (~7px at a 30px logo) — em here resolves against
-     this element's own font-size, not the wordmark's. */
-  .logo .ver,.lp-mark .ver{
-    font-size:.42em;
-    margin-left:.55em;
-    opacity:.5;
-    letter-spacing:.02em;
-  }
-  /* Numeric readouts stay in Inter; the tabular figures come from OT */
-  .timecode,.lo-ts,.sheetTs .big,.note .ts,.rateChip,.nudge,.tBtn{
-    font-variant-numeric:tabular-nums;
-  }
+  button,input,textarea,label{font:inherit;color:inherit}
+  button{background:none;border:0;cursor:pointer}
+  p,h1,h2,.lo-transcript,.note .txt,#toast{text-wrap:balance}
+  .timecode,.lo-ts,.sheetTs .big,.note .ts,.rateChip,.nudge,.qNum,.tgNum,.tgCount,
+  #queueCount,#noteCount,.markerFlag,#dbgLog{font-variant-numeric:tabular-nums}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
+  .i{display:block;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 
-  header{
-    display:flex;align-items:flex-start;justify-content:space-between;
-    padding:22px 22px 10px;gap:14px;
-  }
-  .brand{display:flex;flex-direction:column;gap:6px;min-width:0}
-  .logo{
-    font-size:30px;font-weight:var(--display-wght);letter-spacing:-.015em;line-height:.95;
-    color:var(--accent);
-  }
-  .tagline{
-    font-size:14px;font-weight:500;color:var(--muted);
-    line-height:1.15;text-align:right;padding-top:14px;white-space:nowrap;
-  }
+  /* ── the lockup: wave mark + wordmark, fully opaque ink ── */
+  .lockup{display:inline-flex;align-items:center;gap:.3em;line-height:1;color:var(--ink);white-space:nowrap}
+  .mark{flex:none;width:1.5em;height:auto;overflow:visible;
+    fill:none;stroke:currentColor;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}
+  .word{font-weight:var(--bold);letter-spacing:-.03em}
+  .ver{font-weight:var(--regular);font-size:.46em;letter-spacing:0;margin-left:.35em}
 
-  /* ══════════ LANDING / EMPTY STATE ══════════════════════════════════
-     One confident first screen. Vertical rhythm runs on a single 8px
-     scale — every gap below is a step on it, nothing eyeballed.
-     The app's header is suppressed here so the wordmark appears once. */
-  body:not(.in-session) header{display:none}
-
-  #emptyState{--s1:8px;--s2:16px;--s3:24px;--s4:40px;--s5:64px;--s6:96px}
-
-  .lp-hero{
-    min-height:100svh;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;position:relative;
-    padding:var(--s5) 24px calc(var(--s5) + env(safe-area-inset-bottom));
+  /* ── session header ── */
+  header.bar{
+    display:none;flex:none;align-items:center;justify-content:space-between;gap:12px;
+    padding:max(clamp(8px,1.8dvh,14px),env(safe-area-inset-top)) var(--side) 4px;
   }
-  .lp-mark{
-    font-size:clamp(58px,15vw,116px);
-    line-height:.9;letter-spacing:-.02em;color:var(--accent);
-    margin-bottom:var(--s5);
-  }
-  /* The waveform IS the green moment. Measure stays narrower than the page
-     so it reads as a dense block rather than a thin line stretched wide. */
-  .lp-stage{
-    width:100%;max-width:640px;height:clamp(150px,24vh,232px);
-    margin-bottom:var(--s5);
-  }
-  #heroWave{width:100%;height:100%;display:block}
-  .lp-line{
-    font-size:15px;line-height:1.65;color:var(--dim);
-    max-width:31ch;margin:0 0 var(--s5);
-    text-wrap:balance;   /* with the NBSP in the markup, the em dash can't orphan */
-  }
-  .lp-cta{padding:18px 40px;font-size:11px;letter-spacing:.2em}
-  .pickBtn{
-    display:inline-block;background:var(--accent);color:#080808;
-    font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.18em;
-    text-transform:uppercase;padding:16px 30px;border-radius:8px;cursor:pointer;
-    transition:background .2s;
-  }
-  .pickBtn:hover{background:var(--accent-strong)}
-  .pickBtn:active{transform:scale(.97)}
-  .pickBtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-  #loadStatus{
-    margin-top:var(--s2);font-size:11px;font-weight:500;letter-spacing:.22em;
-    text-transform:uppercase;color:var(--accent);min-height:18px;
-  }
-  .lp-scroll{
-    position:absolute;left:50%;transform:translateX(-50%);
-    bottom:calc(var(--s3) + env(safe-area-inset-bottom));
-    width:1px;height:34px;
-    background:linear-gradient(to bottom,transparent,var(--dim2));
-  }
-
-  /* ══════════ HOW IT WORKS ═══════════════════════════════════════════
-     A direct translation of the echoes landing's #how section. Measures are
-     the same: 448px column, 96px section padding, 80px between steps, 16px
-     within one. Type is the same too — the numeral and title are the UI face
-     at weight 600 / -.015em tracking, NOT the display serif. echoes reserves
-     the serif for its wordmark alone, exactly as noted does. */
-  #how{
-    max-width:448px;margin:0 auto;padding:96px 24px;
-    display:flex;flex-direction:column;gap:80px;
-  }
-  .how-rule{display:block;width:40px;height:1px;background:rgba(var(--accent-rgb),.5)}
-  .how-step{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
-  .how-n{
-    font-size:72px;font-weight:600;letter-spacing:-.015em;line-height:1;
-    color:var(--accent);font-variant-numeric:tabular-nums;
-  }
-  .how-t{
-    display:flex;align-items:center;gap:10px;
-    font-size:24px;font-weight:600;letter-spacing:-.015em;line-height:1.33;
-    color:var(--ink);
-  }
-  .how-t::before{
-    content:'';width:6px;height:6px;border-radius:50%;
-    background:var(--accent);flex-shrink:0;
-  }
-  .how-l{
-    font-size:14px;line-height:1.625;color:var(--dim);
-    max-width:320px;text-wrap:balance;
-  }
-
-  /* Vignettes — ink on green, the house's signature pairing. The ink here is
-     DESIGN.md's #141310, not this page's ground: on a chartreuse fill the
-     house always sets warm near-black, never the page black. */
-  .vig{
-    --vink:#141310;
-    width:100%;background:var(--accent);border-radius:16px;color:var(--vink);
-  }
-  /* 01 — the queue */
-  .vig-queue{position:relative;padding:16px;display:flex;flex-direction:column;gap:8px}
-  .vq-line{position:absolute;left:21px;top:20px;bottom:20px;width:1px;background:rgba(20,19,16,.3)}
-  .vq-row{position:relative;padding-left:24px}
-  .vq-dot{
-    position:absolute;left:3px;top:50%;transform:translateY(-50%);
-    width:6px;height:6px;border-radius:50%;background:var(--vink);
-  }
-  .vq-card{
-    display:flex;align-items:center;gap:12px;
-    border:1px solid rgba(20,19,16,.3);border-radius:8px;padding:10px;
-  }
-  .vq-ico{
-    width:36px;height:36px;flex-shrink:0;border-radius:6px;
-    background:var(--vink);color:var(--accent);
-    display:flex;align-items:center;justify-content:center;font-size:14px;
-  }
-  .vq-txt{flex:1;min-width:0;display:flex;flex-direction:column}
-  .vq-txt b{font-size:14px;font-weight:600;line-height:1.3}
-  .vq-txt i{font-size:12px;font-style:normal;color:rgba(20,19,16,.7);line-height:1.4}
-  .vq-n{
-    flex-shrink:0;font-size:10px;font-weight:600;letter-spacing:.06em;
-    color:rgba(20,19,16,.6);font-variant-numeric:tabular-nums;
-  }
-  /* 02 — riding, mid-track */
-  .vig-ride{position:relative;height:176px;overflow:hidden}
-  .vr-svg{position:absolute;inset:0;width:100%;height:100%}
-  .vr-chip{
-    position:absolute;left:16px;bottom:16px;
-    background:var(--vink);color:var(--accent);
-    border-radius:999px;padding:4px 12px;
-    font-size:11px;font-weight:600;letter-spacing:.04em;
-  }
-  /* 03 — the pause-to-talk moment */
-  .vig-talk{height:192px;display:grid;place-items:center}
-  .vt-circle{
-    position:relative;width:112px;height:112px;border-radius:50%;
-    background:var(--vink);color:var(--accent);
-    display:grid;place-items:center;text-align:center;
-  }
-  .vt-ring{position:absolute;border-radius:50%;border:1px solid rgba(20,19,16,.3)}
-  .vt-r1{inset:-12px}
-  .vt-r2{inset:-24px;border-color:rgba(20,19,16,.15)}
-  .vt-label{
-    font-size:8px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
-    padding:0 10px;line-height:1.4;
-  }
-
-  /* ---------- below the fold: quiet secondary strip ---------- */
-  .lp-more{
-    padding:0 24px var(--s6);
-    display:flex;flex-direction:column;align-items:center;gap:var(--s3);
-    text-align:center;
-  }
-  .lp-chips{
-    display:flex;justify-content:center;flex-wrap:wrap;gap:.45rem .75rem;
-    font-size:9px;font-weight:500;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--dim2);
-  }
-  .lp-chips .sep{color:rgba(var(--accent-rgb),.3)}
-  .lp-note{
-    font-size:12px;line-height:1.75;color:var(--dim2);max-width:44ch;
-  }
-
-  /* ---------- session ---------- */
-  #session{display:none;padding:0 16px 150px}
-  .trackName{
-    font-size:13px;color:var(--muted);text-align:center;
-    margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    padding:0 10px;
-  }
-  .timecode{
-    font-size:56px;font-weight:500;letter-spacing:-.02em;text-align:center;
-    line-height:1;
-  }
-  .timecode .total{
-    font-size:13px;color:var(--muted);font-weight:400;
-    display:block;margin-top:8px;letter-spacing:0;
-  }
-  .sectionNow{
-    text-align:center;font-size:10px;font-weight:500;color:var(--accent);
-    letter-spacing:.28em;text-transform:uppercase;height:15px;margin:10px 0 14px;
-  }
-
-  #waveWrap{position:relative;height:84px;margin:0 2px}
-  #wave{width:100%;height:100%;display:block;touch-action:none}
-  .pin{
-    position:absolute;top:-6px;width:8px;height:8px;margin-left:-4px;border-radius:50%;
-    background:var(--accent);
-  }
-  .pin.done{background:rgba(255,255,255,.22)}
-  .markerFlag{
-    position:absolute;bottom:-18px;transform:translateX(-50%);
-    font-size:9px;font-weight:500;color:var(--muted);
-    letter-spacing:.18em;text-transform:uppercase;white-space:nowrap;
-  }
-
-  .transport{display:flex;align-items:center;justify-content:center;gap:22px;margin:36px 0 12px}
-  /* Five controls have to fit a 320px column when the queue is real */
-  .transport.multi{gap:11px}
-  .transport:not(.multi) .skip{display:none}
-  .tBtn{
-    background:none;border:1px solid var(--line);color:var(--ink);
-    border-radius:50%;width:54px;height:54px;font-size:11px;font-weight:500;
-    cursor:pointer;transition:border-color .2s;
-  }
-  .tBtn.skip{width:44px;height:44px;font-size:9px;letter-spacing:.08em;color:var(--muted)}
-  .tBtn.skip:hover{color:var(--ink)}
-  .tBtn:hover{border-color:var(--line-strong)}
-  .tBtn:active{background:var(--surface)}
-  /* Transport play/pause reads as a neutral control — pausing here does NOT
-     start the mic. The accent-colored pill below is the talk action. */
-  #playBtn{
-    width:76px;height:76px;font-size:22px;
-    border-color:var(--line-strong);color:var(--ink);
-  }
-  #playBtn:hover{border-color:var(--ink);color:var(--ink)}
-  .rateRow{display:flex;justify-content:center;gap:6px;margin-bottom:22px}
-  .rateChip{
-    font-size:12px;font-weight:500;color:var(--muted);background:none;
-    border:none;border-bottom:1px solid transparent;padding:4px 10px;cursor:pointer;
-  }
-  .rateChip.on{color:var(--accent);border-bottom-color:var(--accent)}
-
-  /* ---------- Ride Mode indicator ---------- */
-  .wakeBadge{
-    display:none;text-align:center;
-    font-size:10px;font-weight:500;letter-spacing:.24em;
-    text-transform:uppercase;color:var(--muted);
-    margin:2px 0 16px;
-  }
-  .wakeBadge.on{display:block}
-  .wakeBadge::before{
-    content:'●';color:var(--accent);margin-right:.55em;
-    text-shadow:0 0 6px rgba(var(--accent-rgb),.55);
-  }
+  body.in-session header.bar{display:flex}
+  header.bar .lockup{font-size:22px}
+  header.bar .mark{stroke-width:7.5}
+  .bar-end{display:flex;align-items:center;gap:16px;min-width:0}
+  .wakeBadge{display:none;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);white-space:nowrap}
+  .wakeBadge.on{display:inline-flex}
+  .wakeBadge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ink)}
   @media (prefers-reduced-motion:no-preference){
     .wakeBadge.on::before{animation:blip 2.4s ease-in-out infinite}
   }
+  @media (max-width:360px){ .wakeBadge .wt{display:none} }
 
-  #noteBtn{
-    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
-    transform:translateX(-50%);
-    width:min(420px,calc(100% - 32px));height:56px;border-radius:8px;border:none;
-    background:var(--accent);color:#080808;
-    font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.2em;
-    text-transform:uppercase;cursor:pointer;
-    display:none;align-items:center;justify-content:center;gap:12px;
-    box-shadow:0 8px 28px rgba(var(--accent-rgb),.28);
-    transition:background .2s;
+  /* quiet actions: words, not boxes */
+  .textBtn{
+    position:relative;display:inline-flex;align-items:center;
+    font-size:15px;color:var(--ink);padding:8px 0;cursor:pointer;white-space:nowrap;
+    text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;
+    text-decoration-color:var(--ink-3);
   }
-  #noteBtn:hover{background:var(--accent-strong)}
-  #noteBtn:active{transform:translateX(-50%) scale(.98)}
-  #noteBtn .dot{width:8px;height:8px;border-radius:50%;background:#080808}
+  .textBtn:hover{text-decoration-color:var(--ink)}
+  .textBtn:active{opacity:.55}
+  .textBtn input,.pickBtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+  /* ══════════ LANDING ══════════
+     One confident first screen on an 8px scale. The session header is
+     hidden here so the lockup appears once, at hero size. */
+  #emptyState{--s1:8px;--s2:16px;--s3:24px;--s4:40px;--s5:56px;--s6:96px}
+  .lp-hero{
+    min-height:100svh;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:calc(var(--s5) + env(safe-area-inset-top)) 24px calc(var(--s5) + env(safe-area-inset-bottom));
+  }
+  .lp-mark{font-size:clamp(54px,14.5vw,108px);margin-bottom:var(--s5)}
+  .lp-stage{width:100%;max-width:640px;height:clamp(150px,24vh,232px);margin-bottom:var(--s5)}
+  #heroWave{width:100%;height:100%;display:block}
+  .lp-line{font-size:22px;line-height:1.3;letter-spacing:-.01em;margin-bottom:var(--s4)}
+  .pickBtn{
+    display:inline-flex;align-items:center;justify-content:center;position:relative;
+    background:var(--ink);color:var(--ground);border-radius:999px;
+    font-size:17px;font-weight:var(--bold);padding:17px 36px;cursor:pointer;
+    transition:transform .15s;
+  }
+  .pickBtn:active{transform:scale(.97)}
+  #loadStatus{margin-top:var(--s2);font-size:14px;color:var(--ink-2);min-height:20px}
+  .lp-scroll{
+    position:absolute;left:50%;transform:translateX(-50%);
+    bottom:calc(var(--s3) + env(safe-area-inset-bottom));
+    width:1.5px;height:34px;background:linear-gradient(to bottom,transparent,var(--ink-3));
+  }
+
+  /* ══════════ HOW IT WORKS ══════════
+     Same measures as before (448px column, 96px section padding, 80px
+     between steps, 16px within). The vignettes sit on a light ink wash
+     instead of a fill, so the page keeps one ground. */
+  #how{max-width:448px;margin:0 auto;padding:96px 24px;display:flex;flex-direction:column;gap:80px}
+  .how-rule{display:block;width:40px;height:1.5px;background:var(--ink-3)}
+  .how-step{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .how-n{font-size:72px;font-weight:var(--bold);letter-spacing:-.04em;line-height:1}
+  .how-t{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:var(--bold);letter-spacing:-.02em;line-height:1.2}
+  .how-t::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ink);flex-shrink:0}
+  .how-l{font-size:17px;line-height:1.5;color:var(--ink-2);max-width:21em}
+  .vig{width:100%;background:var(--wash);border-radius:20px}
+  .vig-queue{position:relative;padding:16px;display:flex;flex-direction:column;gap:8px}
+  .vq-line{position:absolute;left:21px;top:22px;bottom:22px;width:1.5px;background:var(--ink-3)}
+  .vq-row{position:relative;padding-left:24px}
+  .vq-dot{position:absolute;left:3px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%;background:var(--ink)}
+  .vq-card{display:flex;align-items:center;gap:12px;background:var(--ground);border-radius:14px;padding:10px}
+  .vq-ico{width:38px;height:38px;flex-shrink:0;border-radius:10px;background:var(--ink);color:var(--ground);display:grid;place-items:center}
+  .vq-ico .mark{width:24px;stroke-width:9}
+  .vq-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .vq-txt b{font-size:15px;font-weight:var(--bold);line-height:1.3}
+  .vq-txt i{font-size:13px;font-style:normal;color:var(--ink-2);line-height:1.4}
+  .vq-n{flex-shrink:0;font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+  .vig-ride{position:relative;height:176px;overflow:hidden}
+  .vr-svg{position:absolute;inset:0;width:100%;height:100%}
+  .vr-chip{position:absolute;left:16px;bottom:16px;background:var(--ink);color:var(--ground);border-radius:999px;padding:5px 13px;font-size:13px;font-weight:var(--bold)}
+  .vig-talk{height:192px;display:grid;place-items:center}
+  .vt-circle{position:relative;width:112px;height:112px;border-radius:50%;background:var(--ink);color:var(--ground);display:grid;place-items:center;text-align:center}
+  .vt-ring{position:absolute;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--ink-3)}
+  .vt-r1{inset:-12px}
+  .vt-r2{inset:-24px;box-shadow:inset 0 0 0 1.5px var(--line)}
+  .vt-label{font-size:13px;font-weight:var(--bold);line-height:1.2;white-space:nowrap}
+
+  .lp-more{padding:0 24px var(--s6);display:flex;justify-content:center;text-align:center}
+  .lp-note{font-size:15px;line-height:1.55;color:var(--ink-2);max-width:21em}
+
+  /* ══════════ SESSION ══════════
+     An installed app, not a page: the session is exactly one viewport.
+     Only the queue and the notes scroll, each inside its own box. */
+  #session{display:none}
+  body.in-session{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden}
+  body.in-session #session{flex:1 1 0;min-height:0}
+  .player{height:100%;display:flex;flex-direction:column;padding:0 var(--side)}
+  .deck{flex:none;display:flex;flex-direction:column}
+  .trackName{
+    font-size:15px;color:var(--ink-2);text-align:center;margin-top:clamp(2px,1dvh,8px);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .timecode{
+    font-size:min(16.5vw,8dvh,68px);letter-spacing:-.035em;line-height:1;
+    text-align:center;margin-top:clamp(2px,.8dvh,6px);user-select:none;-webkit-user-select:none;
+  }
+  .nowLine{display:flex;justify-content:center;align-items:baseline;height:20px;margin-top:clamp(2px,1dvh,8px);font-size:14px;white-space:nowrap}
+  .nowLine .total{color:var(--ink-2)}
+  .sectionNow{font-weight:var(--bold);overflow:hidden;text-overflow:ellipsis;max-width:60%}
+  .sectionNow:not(:empty)::before{content:'·';font-weight:var(--regular);color:var(--ink-3);margin:0 8px}
+
+  #waveWrap{position:relative;height:clamp(40px,8dvh,76px);margin:clamp(10px,1.8dvh,14px) 0 23px}
+  #wave{width:100%;height:100%;display:block;touch-action:none}
+  .pin{position:absolute;top:-8px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--ink);cursor:pointer}
+  .pin.done{background:var(--ink-3)}
+  .pin.flagged{background:var(--ground);box-shadow:inset 0 0 0 1.75px var(--ink)}
+  .markerFlag{position:absolute;bottom:-21px;transform:translateX(-50%);font-size:12px;color:var(--ink-2);white-space:nowrap}
+  .markerFlag.tight{visibility:hidden}
+
+  .transport{display:flex;align-items:center;justify-content:center;gap:clamp(8px,4.5vw,22px)}
+  .transport:not(.multi) .skip{display:none}
+  .tBtn{width:clamp(42px,6.3dvh,50px);height:clamp(42px,6.3dvh,50px);border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
+  .tBtn:active{background:var(--wash)}
+  .tBtn .i{width:28px;height:28px}
+  .tBtn.skip{width:42px;height:42px;color:var(--ink-2)}
+  .tBtn.skip .i{width:22px;height:22px}
+  #playBtn{width:clamp(54px,8.8dvh,70px);height:clamp(54px,8.8dvh,70px);box-shadow:inset 0 0 0 1.75px var(--ink)}
+  #playBtn .i{width:30px;height:30px}
+  #playBtn .i-pause,#playBtn.is-playing .i-play{display:none}
+  #playBtn.is-playing .i-pause{display:block}
+
+  .tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:clamp(2px,1.2dvh,10px) 0 clamp(2px,1dvh,8px)}
+  .rateRow{display:flex;gap:2px;margin-left:-10px}
+  .rateChip{font-size:14px;color:var(--ink-2);padding:7px 10px;border-radius:999px}
+  .rateChip.on{color:var(--ink);background:var(--wash);font-weight:var(--bold)}
+
+  .lists{flex:1 1 0;min-height:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .listHead{flex:none;display:flex;align-items:center;gap:10px;padding:10px 0 4px}
+  .tabs{display:flex;align-items:baseline;gap:20px;min-width:0}
+  .tab{display:inline-flex;align-items:baseline;gap:8px;padding:4px 0;white-space:nowrap}
+  .tab .tl{font-size:17px;letter-spacing:-.01em;color:var(--ink-2)}
+  .tab .count{font-size:14px;color:var(--ink-2)}
+  .tab[aria-selected="true"] .tl{color:var(--ink);font-weight:var(--bold)}
+  .tab[aria-selected="false"] .count{display:none}
+  #queueTab{display:none}
+  .lists:has(#queueWrap.on) #queueTab{display:inline-flex}
+  /* one track: Notes is a heading, not a tab */
+  .lists:not(:has(#queueWrap.on)) .tab{pointer-events:none}
+  .lists:not(:has(#queueWrap.on)) [data-tab="notes"] .tl{color:var(--ink);font-weight:var(--bold)}
+  .lists:not(:has(#queueWrap.on)) [data-tab="notes"] .count{display:inline}
+  .listHead .textBtn{margin-left:auto;font-size:14px;padding:4px 0}
+  @media (max-width:359px){ #exportBtn .long{display:none} }
+  #queueWrap{display:none}
+  .lists[data-tab="queue"] #queueWrap.on{display:flex;flex-direction:column;flex:1 1 0;min-height:0}
+  .lists[data-tab="queue"]:has(#queueWrap.on) .notesWrap{display:none}
+  #queueList,#noteList{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  #queueList{flex:1 1 auto}
+  .notesWrap{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  #noteList{flex:1 1 0;display:flex;flex-direction:column;padding-bottom:6px}
+  #noteList>*{flex-shrink:0}
+
+  .qItem{display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer}
+  .qItem .qNum{font-size:13px;color:var(--ink-2);width:20px;flex-shrink:0}
+  .qItem .qName{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qItem .qMeta{font-size:13px;color:var(--ink-2);flex-shrink:0}
+  .qItem .qDel{width:30px;height:30px;margin:-6px -7px -6px 0;display:grid;place-items:center;color:var(--ink-2);flex-shrink:0}
+  .qItem .qDel .i{width:16px;height:16px}
+  .qItem.on .qNum{color:var(--ink)}
+  .qItem.on .qName{font-weight:var(--bold)}
+  .qItem.missing .qName{color:var(--ink-3)}
+
+  .trackGroup{display:flex;align-items:baseline;gap:10px;margin:12px 0 0;font-size:13px;color:var(--ink-2)}
+  .trackGroup .tgName{flex:1;min-width:0;font-weight:var(--bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trackGroup.on{color:var(--ink)}
+  .note{display:flex;gap:10px;align-items:flex-start;padding:11px 0}
+  .note+.note{border-top:1px solid var(--line)}
+  .note.done{opacity:.45}
+  .checkBtn{
+    flex:none;width:26px;height:26px;border-radius:50%;margin-top:-2px;
+    display:grid;place-items:center;color:transparent;box-shadow:inset 0 0 0 1.75px var(--ink);
+  }
+  .checkBtn .i{width:15px;height:15px;stroke-width:2.4}
+  .note.done .checkBtn{background:var(--ink);color:var(--ground)}
+  .note .ts{flex:none;min-width:38px;text-align:left;font-size:15px;font-weight:var(--bold);color:var(--ink);padding:1px 0}
+  .note .body{flex:1;min-width:0;padding-top:1px}
+  .note .meta{display:flex;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-bottom:1px}
+  .note .meta>*+*::before{content:'·';margin:0 7px;color:var(--ink-3)}
+  .note .txt{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+  .note .memoBtn{
+    margin-top:6px;display:inline-flex;align-items:center;gap:6px;
+    font-size:14px;font-weight:var(--bold);padding:6px 13px 6px 9px;border-radius:999px;background:var(--wash);
+  }
+  .note .memoBtn .i{width:14px;height:14px}
+  .note .ctrl{flex:none;display:flex;flex-direction:column;margin:-6px -8px -6px 0}
+  .iconBtn{width:34px;height:30px;display:grid;place-items:center;color:var(--ink-2)}
+  .iconBtn .i{width:18px;height:18px}
+  .iconBtn:active{color:var(--ink)}
+  .note.flagged .ts,.note.flagged .txt{color:var(--ink-2)}
+  .note.flagged .tag{color:var(--ink);font-weight:var(--bold)}
+  .emptyNotes{margin:auto;padding:16px 0 24px;max-width:22em;text-align:center;font-size:16px;line-height:1.45;color:var(--ink-2)}
+
+  /* The one bold element */
+  #noteBtn{
+    display:none;flex:none;align-self:center;align-items:center;justify-content:center;gap:12px;
+    width:min(420px,calc(100% - 2 * var(--side)));height:clamp(50px,7.3dvh,58px);
+    margin:clamp(6px,1dvh,8px) 0 max(16px,calc(env(safe-area-inset-bottom) + 4px));
+    background:var(--ink);color:var(--ground);border-radius:999px;
+    font-size:17px;font-weight:var(--bold);
+    box-shadow:0 12px 24px -12px rgba(20,19,16,.5);
+    transition:transform .15s;
+  }
+  #noteBtn:active{transform:scale(.98)}
+  #noteBtn .dot{width:9px;height:9px;border-radius:50%;background:var(--ground)}
   @media (prefers-reduced-motion:no-preference){
     #noteBtn.playing .dot{animation:blink 1.1s steps(2,start) infinite}
     @keyframes blink{to{visibility:hidden}}
   }
 
-  .rowBtns{display:flex;gap:10px;margin:4px 0 22px}
-  .ghostBtn{
-    flex:1;background:none;border:1px solid var(--line);color:var(--muted);
-    font-family:var(--ui);font-size:11px;font-weight:500;letter-spacing:.18em;
-    text-transform:uppercase;padding:14px 12px;border-radius:8px;cursor:pointer;
-    transition:color .2s,border-color .2s;
-  }
-  .ghostBtn:hover{color:var(--ink);border-color:var(--line-strong)}
-  .ghostBtn:active{background:var(--surface)}
-
-  /* ---------- queue ---------- */
-  /* Hidden for a single track — a one-item queue is just noise. */
-  #queueWrap{display:none}
-  #queueWrap.on{display:block}
-  /* ~8 rows visible; a 20-track ride scrolls inside its own box instead of
-     pushing the notes list off the bottom of the screen. */
-  #queueList{
-    max-height:352px;overflow-y:auto;
-    overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
-  }
-  .qItem{
-    display:flex;align-items:center;gap:12px;
-    padding:11px 2px;border-bottom:1px solid var(--line);cursor:pointer;
-  }
-  .qItem .qNum{
-    font-size:10px;font-weight:500;letter-spacing:.16em;color:var(--dim2);
-    font-variant-numeric:tabular-nums;width:18px;flex-shrink:0;
-  }
-  .qItem .qName{
-    flex:1;min-width:0;font-size:13px;color:var(--muted);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .qItem .qMeta{
-    font-size:9px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--dim2);flex-shrink:0;
-  }
-  .qItem .qDel{
-    background:none;border:none;color:var(--dim2);font-size:13px;
-    cursor:pointer;padding:2px 0 2px 6px;flex-shrink:0;
-  }
-  .qItem .qDel:hover{color:var(--ink)}
-  .qItem.on .qNum{color:var(--accent)}
-  .qItem.on .qName{color:var(--ink)}
-  .qItem.on .qMeta{color:var(--accent)}
-  .qItem.missing .qName{opacity:.45}
-  .qItem.missing .qMeta{color:var(--accent)}
-
-  /* ---------- notes ---------- */
-  /* Track header inside the notes list — only rendered for a real queue */
-  .trackGroup{
-    display:flex;align-items:center;gap:10px;
-    margin:20px 2px 2px;padding-bottom:7px;
-    border-bottom:1px solid var(--line);
-  }
-  .trackGroup .tgNum{
-    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--dim2);
-    font-variant-numeric:tabular-nums;
-  }
-  .trackGroup .tgName{
-    flex:1;min-width:0;font-size:10px;font-weight:500;letter-spacing:.2em;
-    text-transform:uppercase;color:var(--muted);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  }
-  .trackGroup .tgCount{
-    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--dim2);
-    font-variant-numeric:tabular-nums;
-  }
-  .trackGroup.on .tgNum,.trackGroup.on .tgName,.trackGroup.on .tgCount{color:var(--accent)}
-  .listHead{display:flex;justify-content:space-between;align-items:baseline;margin:8px 2px 12px}
-  .listHead h2{font-size:11px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
-  .listHead .count{font-size:11px;font-weight:500;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
-  .note{
-    border-bottom:1px solid var(--line);
-    padding:14px 2px;display:flex;gap:14px;align-items:flex-start;
-  }
-  .note.done{opacity:.4}
-  .note .ts{
-    font-size:14px;font-weight:500;color:var(--accent);
-    background:none;border:none;cursor:pointer;padding:2px 0;flex-shrink:0;
-  }
-  .note .body{flex:1;min-width:0}
-  .note .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px}
-  .note .tag{
-    font-size:9px;font-weight:500;letter-spacing:.18em;color:var(--muted);
-    border:1px solid var(--line);border-radius:var(--radius-sm);
-    padding:2px 7px;text-transform:uppercase;
-  }
-  .note .txt{font-size:14px;line-height:1.55;word-wrap:break-word}
-  .note .sec{font-size:10px;font-weight:500;color:var(--muted);margin-top:4px;letter-spacing:.2em;text-transform:uppercase}
-  .note .memoBtn{
-    margin-top:6px;background:none;border:1px solid var(--line);color:var(--accent);
-    font-family:var(--ui);font-size:10px;font-weight:500;letter-spacing:.18em;
-    text-transform:uppercase;padding:6px 12px;border-radius:6px;cursor:pointer;
-  }
-  .note .ctrl{display:flex;flex-direction:column;gap:12px;flex-shrink:0;align-items:center}
-  .iconBtn{background:none;border:none;font-size:14px;cursor:pointer;color:var(--muted);padding:2px}
-  .iconBtn:hover{color:var(--ink)}
-  .checkBtn{
-    width:22px;height:22px;border-radius:50%;border:1px solid var(--line-strong);
-    background:none;cursor:pointer;color:transparent;font-size:11px;line-height:1;
-  }
-  .note.done .checkBtn{border-color:var(--accent);color:var(--accent);background:rgba(var(--accent-rgb),.08)}
-  /* Flagged (backgrounded pause) bookmarks — visually distinct until filled */
-  .note.flagged .ts{color:var(--muted)}
-  .note.flagged .txt{color:var(--muted)}
-  .note.flagged .tag{border-color:rgba(var(--accent-rgb),.5);color:var(--accent)}
-  .pin.flagged{background:transparent;border:1.5px solid var(--accent);width:7px;height:7px}
-  .emptyNotes{
-    text-align:center;color:var(--muted);font-size:12px;padding:28px 24px;line-height:1.7;
-    border:1px dashed var(--line);border-radius:var(--radius);
-  }
-  .emptyNotes b{color:var(--accent);font-weight:500}
-
-  /* ---------- listening overlay (pause-to-talk) ---------- */
+  /* ── listening overlay (pause to talk) ── */
   #listenOverlay{
     position:fixed;inset:0;z-index:60;
-    background:radial-gradient(ellipse 90% 60% at 50% 38%,rgba(var(--accent-rgb),.09) 0%,var(--bg) 60%),var(--bg);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    padding:40px 24px calc(30px + env(safe-area-inset-bottom));
+    background:radial-gradient(70% 46% at 50% 44%,rgba(255,255,255,.26),rgba(255,255,255,0) 72%),var(--ground);
+    display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:calc(32px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
     animation:fadeIn .18s ease-out;
   }
   #listenOverlay.on{display:flex}
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-  .lo-eyebrow{
-    font-size:10px;font-weight:500;letter-spacing:.32em;
-    text-transform:uppercase;color:var(--muted);margin-bottom:24px;
-  }
-  .lo-eyebrow .live{
-    display:inline-block;width:7px;height:7px;border-radius:50%;
-    background:var(--accent);margin-right:.7em;vertical-align:1px;
-    box-shadow:0 0 8px rgba(var(--accent-rgb),.6);
-    animation:blip 1.1s ease-in-out infinite;
-  }
   @keyframes blip{50%{opacity:.25}}
-  .lo-ts{
-    font-size:64px;font-weight:500;letter-spacing:-.02em;
-    color:var(--ink);line-height:1;margin-bottom:8px;
-  }
-  .lo-section{
-    font-size:10px;font-weight:500;letter-spacing:.28em;
-    text-transform:uppercase;color:var(--accent);height:14px;margin-bottom:34px;
-  }
+  .lo-eyebrow{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:var(--bold);margin-bottom:clamp(8px,2.5dvh,20px)}
+  .lo-eyebrow .live{width:9px;height:9px;border-radius:50%;background:var(--ink);animation:blip 1.1s ease-in-out infinite}
+  .lo-ts{font-size:min(19vw,9.5dvh,80px);letter-spacing:-.035em;line-height:1;margin-bottom:8px}
+  .lo-section{font-size:15px;color:var(--ink-2);height:22px;margin-bottom:clamp(10px,3.5dvh,28px)}
   .lo-mic{
-    width:132px;height:132px;border-radius:50%;
-    background:var(--accent);color:#080808;
-    display:flex;align-items:center;justify-content:center;
-    font-size:44px;box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5);
-    margin-bottom:30px;
+    width:clamp(96px,17dvh,136px);height:clamp(96px,17dvh,136px);border-radius:50%;margin-bottom:clamp(14px,3.5dvh,30px);
+    background:var(--ink);color:var(--ground);display:grid;place-items:center;
+    box-shadow:0 0 0 0 rgba(20,19,16,.28);
   }
+  .lo-mic .i{width:46px;height:46px;stroke-width:1.6}
   @media (prefers-reduced-motion:no-preference){
     #listenOverlay.on .lo-mic{animation:pulse2 1.6s ease-out infinite}
-    @keyframes pulse2{
-      0%{box-shadow:0 0 0 0 rgba(var(--accent-rgb),.5)}
-      100%{box-shadow:0 0 0 34px rgba(var(--accent-rgb),0)}
-    }
+    @keyframes pulse2{0%{box-shadow:0 0 0 0 rgba(20,19,16,.28)}100%{box-shadow:0 0 0 34px rgba(20,19,16,0)}}
   }
-  .lo-transcript{
-    font-size:17px;line-height:1.55;color:var(--ink);
-    text-align:center;max-width:520px;min-height:52px;margin-bottom:32px;
-  }
-  .lo-transcript:empty::before{content:'…';color:var(--muted)}
-  .lo-transcript.dim{color:var(--muted)}
-  .lo-hint{
-    font-size:10px;font-weight:500;letter-spacing:.22em;
-    text-transform:uppercase;color:var(--muted);
-    text-align:center;line-height:1.9;margin-bottom:22px;max-width:420px;
-  }
+  .lo-transcript{font-size:20px;line-height:1.4;max-width:19em;min-height:56px;margin-bottom:clamp(10px,3dvh,24px)}
+  .lo-transcript:empty::before{content:'…';color:var(--ink-3)}
+  .lo-transcript.dim{color:var(--ink-2)}
+  .lo-hint{font-size:15px;color:var(--ink-2);margin-bottom:clamp(10px,2.8dvh,22px)}
   .lo-save{
-    background:var(--accent);color:#080808;border:none;
-    font-family:var(--ui);font-size:11px;font-weight:600;letter-spacing:.2em;
-    text-transform:uppercase;padding:16px 32px;border-radius:8px;cursor:pointer;
-    transition:background .2s;
+    background:var(--ink);color:var(--ground);border-radius:999px;
+    font-size:17px;font-weight:var(--bold);padding:17px 34px;transition:transform .15s;
   }
-  .lo-save:hover{background:var(--accent-strong)}
   .lo-save:active{transform:scale(.98)}
 
-  /* ---------- edit sheet ---------- */
+  /* ── edit sheet: the one place a keyboard may appear ── */
   #sheetBack{
-    position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;z-index:70;
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    position:fixed;inset:0;display:none;z-index:70;background:rgba(184,240,110,.55);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   }
   #sheet{
     position:fixed;left:0;right:0;bottom:0;z-index:80;display:none;
-    background:var(--surface);border-top:1px solid var(--line);
-    border-radius:16px 16px 0 0;
-    padding:18px 20px calc(20px + env(safe-area-inset-bottom));
-    max-height:88vh;overflow-y:auto;
+    background:var(--ground);border-radius:24px 24px 0 0;
+    box-shadow:0 -1px 0 var(--line),0 -20px 40px -24px rgba(20,19,16,.4);
+    padding:20px var(--side) calc(20px + env(safe-area-inset-bottom));
+    max-height:88dvh;overflow-y:auto;
   }
-  .sheetHead{
-    font-size:10px;font-weight:500;letter-spacing:.28em;text-transform:uppercase;
-    color:var(--muted);text-align:center;margin-bottom:14px;
-  }
-  .sheetTs{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px}
-  .sheetTs .big{
-    font-size:32px;font-weight:500;letter-spacing:-.01em;
-  }
-  .nudge{
-    background:none;border:1px solid var(--line);color:var(--ink);
-    border-radius:6px;width:48px;height:38px;
-    font-family:var(--ui);font-size:12px;font-weight:500;cursor:pointer;
-  }
-  .nudge:hover{border-color:var(--line-strong)}
-  .tagRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
-  .tagChip{
-    font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
-    padding:7px 12px;border-radius:6px;border:1px solid var(--line);
-    background:none;color:var(--muted);cursor:pointer;
-  }
-  .tagChip.on{border-color:var(--accent);color:var(--accent)}
+  .sheetHead{font-size:17px;font-weight:var(--bold);text-align:center;margin-bottom:12px}
+  .sheetTs{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+  .sheetTs .big{font-size:36px;letter-spacing:-.025em;min-width:3em;text-align:center}
+  .nudge{width:54px;height:40px;border-radius:999px;background:var(--wash);font-size:15px;font-weight:var(--bold)}
+  .tagRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+  .tagChip{font-size:14px;padding:7px 13px;border-radius:999px;background:var(--wash);color:var(--ink-2)}
+  .tagChip.on{background:var(--ink);color:var(--ground)}
   #noteText{
-    display:block;width:100%;min-height:96px;background:var(--bg);border:1px solid var(--line);
-    border-radius:var(--radius);color:var(--ink);font-size:15px;padding:12px;
-    font-family:var(--ui);resize:none;margin-bottom:14px;line-height:1.55;
+    display:block;width:100%;min-height:96px;margin-bottom:16px;padding:12px 14px;resize:none;
+    background:transparent;border:0;border-radius:16px;box-shadow:inset 0 0 0 1.5px var(--line);
+    font-size:16px;line-height:1.45;
   }
-  #noteText:focus{outline:none;border-color:var(--accent)}
+  #noteText:focus{outline:none;box-shadow:inset 0 0 0 1.75px var(--ink)}
+  #noteText::placeholder{color:var(--ink-3)}
   .sheetActions{display:flex;gap:10px}
-  .sheetActions .cancel{
-    flex:1;background:none;border:1px solid var(--line);color:var(--muted);
-    border-radius:8px;padding:14px;
-    font-family:var(--ui);font-size:11px;font-weight:500;
-    letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
-  }
-  .sheetActions .save{
-    flex:2;background:var(--accent);border:none;color:#080808;
-    border-radius:8px;padding:14px;
-    font-family:var(--ui);font-size:11px;font-weight:600;
-    letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
-  }
-  .sheetActions .save:hover{background:var(--accent-strong)}
+  .sheetActions button{padding:15px;border-radius:999px;font-size:16px;font-weight:var(--bold)}
+  .sheetActions .cancel{flex:1;background:var(--wash)}
+  .sheetActions .save{flex:2;background:var(--ink);color:var(--ground)}
 
-  /* ---------- diagnostics panel (triple-tap the timecode) ---------- */
+  /* ── diagnostics (triple tap the timecode) ── */
   #dbgOverlay{
-    position:fixed;left:0;right:0;bottom:0;height:46vh;z-index:120;
-    background:rgba(8,8,8,.97);border-top:1px solid var(--line-strong);
+    position:fixed;left:0;right:0;bottom:0;height:46dvh;z-index:120;
+    background:var(--ground);box-shadow:0 -1px 0 var(--ink-3);
     padding:10px 14px calc(10px + env(safe-area-inset-bottom));
     display:none;flex-direction:column;gap:8px;
   }
   #dbgOverlay.on{display:flex}
-  .dbgHead{
-    display:flex;align-items:center;justify-content:space-between;
-    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
-    color:var(--muted);
-  }
-  .dbgHead .dbgBtns{display:flex;gap:8px}
-  .dbgHead button{
-    background:none;border:1px solid var(--line);color:var(--muted);
-    font-family:var(--ui);font-size:10px;font-weight:500;letter-spacing:.14em;
-    text-transform:uppercase;padding:5px 10px;border-radius:6px;cursor:pointer;
-  }
-  .dbgHead button:hover{color:var(--ink);border-color:var(--line-strong)}
+  .dbgHead{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:var(--bold)}
+  .dbgHead .dbgBtns{display:flex;gap:6px}
+  .dbgHead button{font-size:13px;padding:5px 12px;border-radius:999px;background:var(--wash)}
   #dbgLog{
     flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;
-    line-height:1.55;color:var(--dim);white-space:pre-wrap;word-break:break-all;
+    font-family:var(--font);font-size:11px;line-height:1.5;color:var(--ink-2);
+    white-space:pre-wrap;word-break:break-all;
   }
 
   #toast{
-    position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:99;
-    background:var(--surface);border:1px solid var(--line-strong);color:var(--ink);
-    font-size:12px;font-weight:500;padding:10px 18px;border-radius:8px;
-    display:none;max-width:88%;text-align:center;
+    position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:99;
+    background:var(--ink);color:var(--ground);font-size:15px;font-weight:var(--bold);
+    padding:10px 18px;border-radius:999px;display:none;width:max-content;max-width:calc(100vw - 48px);text-align:center;
   }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <div class="logo">noted<span class="ver">1.0</span></div>
+<!-- Shapes used across the page. The mark has two cuts: the master curve
+     for display sizes, and a compact one (shorter flats) for small sizes. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark-master" viewBox="5 3 110 54"><path d="M10 36 L30 36 C35 36 37 24 43 24 C49 24 50 52 56 52 C62 52 63 8 71 8 C79 8 80 42 86 42 C90 42 92 36 97 36 L110 36"/></symbol>
+  <symbol id="mark-compact" viewBox="15 1 94 58"><path d="M20 36 L29 36 C34 36 36 24 42 24 C48 24 49 54 56 54 C63 54 64 6 72 6 C80 6 81 42 87 42 C91 42 93 36 98 36 L104 36"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M8 5.6v12.8a1.1 1.1 0 0 0 1.7.93l10-6.4a1.1 1.1 0 0 0 0-1.86l-10-6.4A1.1 1.1 0 0 0 8 5.6z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect fill="currentColor" stroke="none" x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect fill="currentColor" stroke="none" x="13.9" y="5" width="3.6" height="14" rx="1.2"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M5.5 5.5v13"/><path fill="currentColor" stroke="none" d="M19 6.3v11.4a1 1 0 0 1-1.55.83l-8.4-5.7a1 1 0 0 1 0-1.66l8.4-5.7A1 1 0 0 1 19 6.3z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M18.5 5.5v13"/><path fill="currentColor" stroke="none" d="M5 6.3v11.4a1 1 0 0 0 1.55.83l8.4-5.7a1 1 0 0 0 0-1.66l-8.4-5.7A1 1 0 0 0 5 6.3z"/></symbol>
+  <symbol id="i-back10" viewBox="0 0 24 24"><path d="M10.6 4.6A8.4 8.4 0 1 1 3.8 11.4"/><path d="M13 2.4 10.6 4.6l2.4 2.3"/><text x="12.3" y="16.3" font-size="7.6" font-weight="600" text-anchor="middle" fill="currentColor" stroke="none">10</text></symbol>
+  <symbol id="i-fwd10" viewBox="0 0 24 24"><path d="M13.4 4.6A8.4 8.4 0 1 0 20.2 11.4"/><path d="M11 2.4l2.4 2.2L11 6.9"/><text x="11.7" y="16.3" font-size="7.6" font-weight="600" text-anchor="middle" fill="currentColor" stroke="none">10</text></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7.4"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M15.2 4.8l4 4L9 19H5v-4z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2.8" width="6" height="11.4" rx="3"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3.8"/></symbol>
+</svg>
+
+<header class="bar">
+  <div class="lockup" aria-label="noted 1.0"><svg class="mark" viewBox="0 0 94 58" aria-hidden="true"><use href="#mark-compact"/></svg><span class="word">noted<span class="ver">1.0</span></span></div>
+  <div class="bar-end">
+    <div class="wakeBadge" id="wakeBadge"><span class="wt">Screen on</span></div>
+    <label class="textBtn">Add tracks<input type="file" id="fileInput2" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
   </div>
-  <div class="tagline">Talk to your mix.</div>
 </header>
 
 <div id="emptyState">
-  <!-- Landing only. The app's own header is hidden here (body:not(.in-session))
-       so the wordmark appears once, at hero scale, instead of twice. -->
   <section class="lp-hero">
-    <h1 class="lp-mark">noted<span class="ver">1.0</span></h1>
+    <h1 class="lockup lp-mark"><svg class="mark" viewBox="0 0 110 54" aria-hidden="true"><use href="#mark-master"/></svg><span class="word">noted<span class="ver">1.0</span></span></h1>
     <div class="lp-stage">
       <canvas id="heroWave" aria-hidden="true"></canvas>
     </div>
-    <p class="lp-line">Load your mix, ride, and just talk&nbsp;— every note pins to the moment.</p>
+    <p class="lp-line">Talk to your mix.</p>
     <label class="pickBtn lp-cta">Load tracks<input type="file" id="fileInput" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
     <div id="loadStatus"></div>
     <div class="lp-scroll" aria-hidden="true"></div>
   </section>
 
-  <!-- Mirrors the echoes landing's #how section: hairline, oversized accent
-       numeral, dotted lowercase title, one line, then an ink-on-green
-       vignette. Same measures (448px column, 96/80/16px rhythm) and the same
-       ink-on-green vignette pairing — noted's own steps and drawings. -->
   <section id="how">
     <span class="how-rule" aria-hidden="true"></span>
 
     <div class="how-step">
       <p class="how-n" aria-hidden="true">01</p>
-      <h2 class="how-t">load</h2>
-      <p class="how-l">Load one bounce, or a whole queue for the ride.</p>
+      <h2 class="how-t">Load</h2>
+      <p class="how-l">Load one bounce or a whole queue.</p>
       <div class="vig vig-queue">
         <span class="vq-line" aria-hidden="true"></span>
         <div class="vq-row">
           <span class="vq-dot" aria-hidden="true"></span>
           <div class="vq-card">
-            <span class="vq-ico" aria-hidden="true">♪</span>
-            <span class="vq-txt"><b>ride home v3</b><i>bounce · 4:12</i></span>
+            <span class="vq-ico" aria-hidden="true"><svg class="mark" viewBox="0 0 94 58"><use href="#mark-compact"/></svg></span>
+            <span class="vq-txt"><b>ride home v3</b><i>Bounce · 4:12</i></span>
             <span class="vq-n">01</span>
           </div>
         </div>
         <div class="vq-row">
           <span class="vq-dot" aria-hidden="true"></span>
           <div class="vq-card">
-            <span class="vq-ico" aria-hidden="true">♪</span>
-            <span class="vq-txt"><b>chorus rework</b><i>bounce · 3:48</i></span>
+            <span class="vq-ico" aria-hidden="true"><svg class="mark" viewBox="0 0 94 58"><use href="#mark-compact"/></svg></span>
+            <span class="vq-txt"><b>chorus rework</b><i>Bounce · 3:48</i></span>
             <span class="vq-n">02</span>
           </div>
         </div>
@@ -669,22 +442,24 @@
 
     <div class="how-step">
       <p class="how-n" aria-hidden="true">02</p>
-      <h2 class="how-t">ride</h2>
-      <p class="how-l">Press play, pocket the phone, and just ride.</p>
+      <h2 class="how-t">Ride</h2>
+      <p class="how-l">Press play, pocket the phone, and ride.</p>
       <div class="vig vig-ride">
         <svg viewBox="0 0 320 176" aria-hidden="true" class="vr-svg">
           <g fill="#141310">
-            <rect x="14"  y="80" width="4" height="16" rx="2" opacity=".45"/>
-            <rect x="26"  y="72" width="4" height="32" rx="2" opacity=".45"/>
-            <rect x="38"  y="60" width="4" height="56" rx="2" opacity=".45"/>
-            <rect x="50"  y="68" width="4" height="40" rx="2" opacity=".45"/>
-            <rect x="62"  y="46" width="4" height="84" rx="2" opacity=".45"/>
-            <rect x="74"  y="58" width="4" height="60" rx="2" opacity=".45"/>
-            <rect x="86"  y="70" width="4" height="36" rx="2" opacity=".45"/>
-            <rect x="98"  y="52" width="4" height="72" rx="2" opacity=".45"/>
-            <rect x="110" y="64" width="4" height="48" rx="2" opacity=".45"/>
-            <rect x="122" y="42" width="4" height="92" rx="2" opacity=".45"/>
-            <rect x="134" y="56" width="4" height="64" rx="2" opacity=".45"/>
+            <rect x="14"  y="80" width="4" height="16" rx="2"/>
+            <rect x="26"  y="72" width="4" height="32" rx="2"/>
+            <rect x="38"  y="60" width="4" height="56" rx="2"/>
+            <rect x="50"  y="68" width="4" height="40" rx="2"/>
+            <rect x="62"  y="46" width="4" height="84" rx="2"/>
+            <rect x="74"  y="58" width="4" height="60" rx="2"/>
+            <rect x="86"  y="70" width="4" height="36" rx="2"/>
+            <rect x="98"  y="52" width="4" height="72" rx="2"/>
+            <rect x="110" y="64" width="4" height="48" rx="2"/>
+            <rect x="122" y="42" width="4" height="92" rx="2"/>
+            <rect x="134" y="56" width="4" height="64" rx="2"/>
+          </g>
+          <g fill="#141310" opacity=".3">
             <rect x="146" y="74" width="4" height="28" rx="2"/>
             <rect x="158" y="62" width="4" height="52" rx="2"/>
             <rect x="170" y="50" width="4" height="76" rx="2"/>
@@ -699,17 +474,17 @@
             <rect x="278" y="82" width="4" height="12" rx="2"/>
             <rect x="290" y="84" width="4" height="8"  rx="2"/>
           </g>
-          <rect x="142" y="30" width="2" height="116" fill="#141310"/>
-          <circle cx="143" cy="30" r="4" fill="#141310"/>
+          <rect x="141.25" y="30" width="1.5" height="116" fill="#141310"/>
+          <circle cx="142" cy="30" r="4" fill="#141310"/>
         </svg>
-        <span class="vr-chip">02 / 03 · playing</span>
+        <span class="vr-chip">Playing · 2 of 3</span>
       </div>
     </div>
 
     <div class="how-step">
       <p class="how-n" aria-hidden="true">03</p>
-      <h2 class="how-t">talk</h2>
-      <p class="how-l">Pause on your headphones and talk&nbsp;— it pins itself.</p>
+      <h2 class="how-t">Talk</h2>
+      <p class="how-l">Pause on your headphones and say what you hear.</p>
       <div class="vig vig-talk">
         <div class="vt-circle">
           <span class="vt-ring vt-r1" aria-hidden="true"></span>
@@ -721,54 +496,47 @@
   </section>
 
   <section class="lp-more">
-    <div class="lp-chips">
-      <span>Voice Notes</span><span class="sep">·</span>
-      <span>Timestamped</span><span class="sep">·</span>
-      <span>Any Audio Format</span><span class="sep">·</span>
-      <span>Works Offline</span>
-    </div>
-    <p class="lp-note">Notes save per track name — load the same file again and they come straight back. Pick several at once to build a ride queue.</p>
+    <p class="lp-note">Plays any audio file, works offline, and keeps notes with each track.</p>
   </section>
 </div>
 
 <div id="session">
-  <div class="trackName" id="trackName"></div>
-  <div class="timecode"><span id="tcNow">0:00.0</span><span class="total" id="tcTotal">/ 0:00</span></div>
-  <div class="sectionNow" id="sectionNow"></div>
-  <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div></div>
+  <div class="player">
+    <div class="deck">
+      <div class="trackName" id="trackName"></div>
+      <div class="timecode"><span id="tcNow">0:00.0</span></div>
+      <div class="nowLine"><span class="total" id="tcTotal">/ 0:00</span><span class="sectionNow" id="sectionNow"></span></div>
+      <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div></div>
 
-  <div class="transport" id="transport">
-    <button class="tBtn skip" id="prevBtn" aria-label="Previous track">◀◀</button>
-    <button class="tBtn" id="back10">−10s</button>
-    <button class="tBtn" id="playBtn">▶</button>
-    <button class="tBtn" id="fwd10">+10s</button>
-    <button class="tBtn skip" id="nextBtn" aria-label="Next track">▶▶</button>
-  </div>
-  <div class="rateRow">
-    <button class="rateChip" data-rate="0.75">0.75×</button>
-    <button class="rateChip on" data-rate="1">1×</button>
-    <button class="rateChip" data-rate="1.25">1.25×</button>
-  </div>
-  <div class="wakeBadge" id="wakeBadge">Screen staying awake</div>
-
-  <div class="rowBtns">
-    <button class="ghostBtn" id="markerBtn">+ Section marker</button>
-    <button class="ghostBtn" id="exportBtn">Export notes</button>
-  </div>
-
-  <div id="queueWrap">
-    <div class="listHead">
-      <h2>Queue</h2><span class="count" id="queueCount"></span>
+      <div class="transport" id="transport">
+        <button class="tBtn skip" id="prevBtn" aria-label="Previous track"><svg class="i"><use href="#i-prev"/></svg></button>
+        <button class="tBtn" id="back10" aria-label="Back 10 seconds"><svg class="i"><use href="#i-back10"/></svg></button>
+        <button class="tBtn" id="playBtn" aria-label="Play"><svg class="i i-play"><use href="#i-play"/></svg><svg class="i i-pause"><use href="#i-pause"/></svg></button>
+        <button class="tBtn" id="fwd10" aria-label="Forward 10 seconds"><svg class="i"><use href="#i-fwd10"/></svg></button>
+        <button class="tBtn skip" id="nextBtn" aria-label="Next track"><svg class="i"><use href="#i-next"/></svg></button>
+      </div>
+      <div class="tools">
+        <div class="rateRow">
+          <button class="rateChip" data-rate="0.75">0.75×</button>
+          <button class="rateChip on" data-rate="1">1×</button>
+          <button class="rateChip" data-rate="1.25">1.25×</button>
+        </div>
+        <button class="textBtn" id="markerBtn">Mark section</button>
+      </div>
     </div>
-    <div id="queueList"></div>
-  </div>
 
-  <div class="listHead">
-    <h2>Notes</h2><span class="count" id="noteCount"></span>
-  </div>
-  <div id="noteList"></div>
-  <div class="rowBtns" style="margin-top:18px">
-    <label class="ghostBtn" style="text-align:center">Add tracks<input type="file" id="fileInput2" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></label>
+    <!-- With a queue, Notes and Queue take turns in one scroll region -->
+    <div class="lists" data-tab="notes">
+      <div class="listHead">
+        <div class="tabs" role="tablist">
+          <button class="tab" data-tab="notes" role="tab" aria-selected="true"><span class="tl">Notes</span><span class="count" id="noteCount"></span></button>
+          <button class="tab" data-tab="queue" role="tab" aria-selected="false" id="queueTab"><span class="tl">Queue</span><span class="count" id="queueCount"></span></button>
+        </div>
+        <button class="textBtn" id="exportBtn">Copy<span class="long">&nbsp;notes</span></button>
+      </div>
+      <div id="queueWrap"><div id="queueList"></div></div>
+      <div class="notesWrap"><div id="noteList"></div></div>
+    </div>
   </div>
 </div>
 
@@ -776,25 +544,25 @@
 
 <!-- Full-screen pause-to-talk state -->
 <div id="listenOverlay">
-  <div class="lo-eyebrow"><span class="live"></span><span id="loEyebrowText">Paused · Listening</span></div>
+  <div class="lo-eyebrow"><span class="live"></span><span id="loEyebrowText">Listening</span></div>
   <div class="lo-ts" id="loTs">0:00</div>
   <div class="lo-section" id="loSection"></div>
-  <div class="lo-mic">🎙</div>
+  <div class="lo-mic"><svg class="i"><use href="#i-mic"/></svg></div>
   <div class="lo-transcript" id="loTranscript"></div>
-  <div class="lo-hint">Press play on your headphones to save · Silence saves nothing</div>
-  <button class="lo-save" id="loSave">▶ Save &amp; continue</button>
+  <p class="lo-hint">Press play to save, or stay silent to skip.</p>
+  <button class="lo-save" id="loSave">Save and play</button>
 </div>
 
 <div id="sheetBack"></div>
 <div id="sheet">
   <div class="sheetHead">Edit note</div>
   <div class="sheetTs">
-    <button class="nudge" id="tsMinus">−1s</button>
+    <button class="nudge" id="tsMinus" aria-label="One second earlier">−1s</button>
     <span class="big" id="sheetTime">0:00</span>
-    <button class="nudge" id="tsPlus">+1s</button>
+    <button class="nudge" id="tsPlus" aria-label="One second later">+1s</button>
   </div>
   <div class="tagRow" id="tagRow"></div>
-  <textarea id="noteText" placeholder="edit this note…"></textarea>
+  <textarea id="noteText" placeholder="Your note"></textarea>
   <div class="sheetActions">
     <button class="cancel" id="cancelNote">Cancel</button>
     <button class="save" id="saveNote">Save</button>
@@ -819,7 +587,10 @@
 const $=id=>document.getElementById(id);
 const TAGS=['Levels','EQ','Vocals','Drums','Low end','FX','Arrangement','Stereo','Cut this','Flagged'];
 const REWIND=3;
-const FLAG_TEXT='⚑ flagged — talk to fill in';
+const FLAG_TEXT='Flagged, talk to fill it in.';
+// Flags saved before the 1.0 copy pass carry the old text; readTrack maps
+// it to FLAG_TEXT so the "still unfilled" comparisons keep working.
+const LEGACY_FLAG_TEXT='⚑ flagged — talk to fill in';
 const FLAG_MAX_AGE_MS=10*60*1000;
 const STORAGE_PREFIX='noted:';
 const LEGACY_PREFIX='mixride:';
@@ -946,7 +717,7 @@ const DBG_KEY=STORAGE_PREFIX+'debuglog';
 let dbgLines=[];
 try{
   const prev=localStorage.getItem(DBG_KEY);
-  if(prev) dbgLines.push('— previous session —',...prev.split('\n').slice(-80),'— this session —');
+  if(prev) dbgLines.push('[previous session]',...prev.split('\n').slice(-80),'[this session]');
 }catch(e){}
 function dbg(msg){
   const t=new Date();
@@ -969,7 +740,9 @@ function readTrack(key){
     const raw=localStorage.getItem(key);
     if(!raw) return {notes:[],markers:[]};
     const d=JSON.parse(raw);
-    return {notes:d.notes||[],markers:d.markers||[]};
+    const ns=d.notes||[];
+    for(const n of ns) if(n.text===LEGACY_FLAG_TEXT) n.text=FLAG_TEXT;
+    return {notes:ns,markers:d.markers||[]};
   }catch(e){ return {notes:[],markers:[]}; }
 }
 function loadSaved(){
@@ -1055,10 +828,10 @@ function play(src){
   const attempt=n=>{
     if(tok!==playToken)return;
     audioEl.play().then(()=>{ if(n>1) dbg('play OK on attempt '+n); }).catch(err=>{
-      dbg('play() rejected'+(src?' ['+src+']':'')+' try '+n+'/4: '+err.name+(err.message?' — '+err.message:''));
+      dbg('play() rejected'+(src?' ['+src+']':'')+' try '+n+'/4: '+err.name+(err.message?': '+err.message:''));
       if(tok!==playToken)return;
       if(n<4) setTimeout(()=>attempt(n+1),300);
-      else toast('Couldn’t resume — tap ▶');
+      else toast('Tap play to resume.');
     });
   };
   attempt(1);
@@ -1094,8 +867,10 @@ function curTime(){ return audioEl?audioEl.currentTime||0:0; }
 function isPlaying(){ return !!(audioEl && !audioEl.paused && !audioEl.ended); }
 
 function uiPlayState(){
-  $('playBtn').textContent=isPlaying()?'❚❚':'▶';
-  $('noteBtn').classList.toggle('playing',isPlaying());
+  const on=isPlaying();
+  $('playBtn').classList.toggle('is-playing',on);
+  $('playBtn').setAttribute('aria-label',on?'Pause':'Play');
+  $('noteBtn').classList.toggle('playing',on);
 }
 
 /* ---------- MediaSession (headphone buttons + lock-screen card) ----------
@@ -1287,7 +1062,7 @@ function beginListening(customTs){
   pendingCommit=false;
   $('loTs').textContent=fmt(pinTs);
   $('loSection').textContent=sectionAt(pinTs)||'';
-  $('loEyebrowText').textContent=fillingFlagId?'Filling flag · Listening':'Paused · Listening';
+  $('loEyebrowText').textContent=fillingFlagId?'Filling your flag':'Listening';
   const tr=$('loTranscript');
   tr.textContent='';
   tr.classList.remove('dim');
@@ -1417,14 +1192,14 @@ function startSR(){
     sr.onend=()=>{
       // iOS often ends the session early — restart while still listening
       if(!srExpectedEnd && listenState==='listening'){
-        dbg('SR ended early — restarting');
+        dbg('SR ended early, restarting');
         try{ sr.start(); }catch(e){/* another start in flight; ignore */}
       }
     };
     sr.start();
     dbg('SR started');
   }catch(e){
-    dbg('SR start threw: '+(e&&e.message)+' — memo fallback');
+    dbg('SR start threw: '+(e&&e.message)+', memo fallback');
     startMemo();
   }
 }
@@ -1475,7 +1250,7 @@ async function startMemo(){
     tr.classList.add('dim');
   }catch(e){
     usingMemo=false;
-    tr.textContent='Mic access denied — check Safari site settings';
+    tr.textContent='Allow the mic in Safari settings.';
     tr.classList.add('dim');
   }
 }
@@ -1603,7 +1378,7 @@ async function addFiles(fileList,{replace}={}){
 async function loadTrack(i,{autoplay}={}){
   const t=queue[i];
   if(!t) return;
-  if(!t.file){ t.missing=true; renderQueue(); toast('That track needs re-loading'); return; }
+  if(!t.file){ t.missing=true; renderQueue(); toast('Load that track again'); return; }
   switchingTrack=true;
   dbg('loadTrack '+(i+1)+'/'+queue.length+' autoplay='+!!autoplay);
   if(listenState==='listening'){
@@ -1660,7 +1435,7 @@ function schedulePeaks(t,i){
       if(peaksCache.size>40) peaksCache.delete(peaksCache.keys().next().value);
       if(qIndex===i){ peaks=r.peaks; if(!dur) dur=r.duration; drawWave(); layoutPins(); }
     }catch(e){
-      if(qIndex===i){ peaks=null; drawWave(); toast('Waveform unavailable for this file'); }
+      if(qIndex===i){ peaks=null; drawWave(); toast('No waveform for this file'); }
     }
   });
 }
@@ -1715,7 +1490,7 @@ async function restoreQueue(){
   const start=queue[idx]&&queue[idx].file?idx:queue.findIndex(t=>t.file);
   if(start>-1){
     await loadTrack(start,{autoplay:false});
-    toast(`Queue restored — ${restored} track${restored>1?'s':''}`);
+    toast(`${restored} track${restored>1?'s':''} restored`);
   }
 }
 restoreQueue().catch(()=>{});
@@ -1727,15 +1502,21 @@ function drawWave(){
   c.width=w*dpr;c.height=h*dpr;
   const g=c.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,w,h);
   const prog=dur?curTime()/dur:0;
-  const N=peaks?peaks.length:120;
-  const bw=w/N;
+  // Bars on a 3px pitch, each the loudest peak it covers
+  const N=Math.max(24,Math.floor(w/3)), bw=w/N;
   for(let i=0;i<N;i++){
-    const p=peaks?Math.pow(peaks[i],0.7):0.3;
-    const bh=Math.max(2,p*(h-12));
-    g.fillStyle=(i/N<=prog)?'#b8f06e':'rgba(255,255,255,.14)';
+    let p=0.3;
+    if(peaks){
+      const a=Math.floor(i/N*peaks.length), b=Math.max(a+1,Math.floor((i+1)/N*peaks.length));
+      p=0; for(let j=a;j<b;j++) if(peaks[j]>p) p=peaks[j];
+      p=Math.pow(p,0.7);
+    }
+    const bh=Math.max(2,p*(h-6));
+    // played: solid ink; still to come: ink at 30%
+    g.fillStyle=((i+0.5)/N<=prog)?'#141310':'rgba(20,19,16,.3)';
     g.fillRect(i*bw+0.5,(h-bh)/2,Math.max(1,bw-1.2),bh);
   }
-  g.fillStyle='#ffffff';g.fillRect(prog*w-0.5,2,1.5,h-4);
+  g.fillStyle='#141310';g.fillRect(prog*w-0.75,0,1.5,h);
 }
 function seekFromX(clientX){
   const r=$('wave').getBoundingClientRect();
@@ -1791,7 +1572,7 @@ function sectionAt(t,marks){
 $('markerBtn').onclick=()=>{
   const was=isPlaying(); if(was) pauseAudio();
   const t=curTime();
-  const name=prompt('Name this section (Chorus 2, Bridge, Drop…):');
+  const name=prompt('Name this section, like Chorus 2');
   if(name && name.trim()){
     markers.push({t,name:name.trim()});
     markers.sort((a,b)=>a.t-b.t);
@@ -1826,6 +1607,14 @@ function layoutPins(){
     f.className='markerFlag';f.textContent=m.name;
     f.style.left=(m.t/dur*w)+'px';
     layer.appendChild(f);
+  }
+  // A label that would run into the one before it is hidden; the section
+  // name above the waveform still says where you are.
+  let lastRight=-Infinity;
+  for(const f of layer.querySelectorAll('.markerFlag')){
+    const x=parseFloat(f.style.left), half=f.offsetWidth/2;
+    if(x-half<lastRight+8){ f.classList.add('tight'); continue; }
+    lastRight=x+half;
   }
 }
 
@@ -1907,8 +1696,8 @@ function renderQueue(){
     d.innerHTML=`
       <span class="qNum">${String(i+1).padStart(2,'0')}</span>
       <span class="qName"></span>
-      <span class="qMeta">${t.missing?'reload':(n?n+(n>1?' notes':' note'):'')}</span>
-      <button class="qDel" aria-label="Remove from queue">✕</button>`;
+      <span class="qMeta">${t.missing?'Missing':(n?n+(n>1?' notes':' note'):'')}</span>
+      <button class="qDel" aria-label="Remove from queue"><svg class="i"><use href="#i-x"/></svg></button>`;
     d.querySelector('.qName').textContent=t.name;
     d.onclick=e=>{
       if(e.target.closest('.qDel'))return;
@@ -1928,6 +1717,19 @@ function renderQueue(){
   }
 }
 
+/* ================= LIST TABS (layout only) =================
+   The session is one screen, so with a queue the notes and the queue share
+   one scroll region and take turns. Nothing here touches playback. */
+function setListTab(t){
+  document.querySelector('.lists').dataset.tab=t;
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));
+  if(t==='queue'){
+    const list=$('queueList'), cur=list.children[qIndex];
+    if(cur) list.scrollTop=Math.max(0,cur.offsetTop-list.offsetTop-list.clientHeight/2+cur.offsetHeight/2);
+  }
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setListTab(b.dataset.tab));
+
 /* ================= NOTES LIST ================= */
 let memoPlayer=null;
 
@@ -1936,20 +1738,20 @@ let memoPlayer=null;
 function noteRow(n,group){
   const d=document.createElement('div');
   d.className='note'+(n.done?' done':'')+(n.flagged?' flagged':'');
-  const tags=(n.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+  const meta=(n.section?[`<span class="sec">${n.section}</span>`]:[])
+    .concat((n.tags||[]).map(t=>`<span class="tag">${t}</span>`)).join('');
   const hasMemo=n.hasMemo||n.memo;   // n.memo kept for backward-compat with pre-IDB notes
   d.innerHTML=`
+    <button class="checkBtn" aria-label="Mark fixed"><svg class="i"><use href="#i-check"/></svg></button>
     <button class="ts">${fmt(n.t)}</button>
     <div class="body">
-      ${tags?`<div class="tags">${tags}</div>`:''}
+      ${meta?`<div class="meta">${meta}</div>`:''}
       ${n.text?`<div class="txt"></div>`:''}
-      ${n.section?`<div class="sec">${n.section}</div>`:''}
-      ${hasMemo?`<button class="memoBtn">▶ memo</button>`:''}
+      ${hasMemo?`<button class="memoBtn"><svg class="i"><use href="#i-play"/></svg>Memo</button>`:''}
     </div>
     <div class="ctrl">
-      <button class="checkBtn">✓</button>
-      <button class="iconBtn edit">✎</button>
-      <button class="iconBtn del">✕</button>
+      <button class="iconBtn edit" aria-label="Edit note"><svg class="i"><use href="#i-edit"/></svg></button>
+      <button class="iconBtn del" aria-label="Delete note"><svg class="i"><use href="#i-x"/></svg></button>
     </div>`;
   if(n.text) d.querySelector('.txt').textContent=n.text;
 
@@ -1986,11 +1788,11 @@ function noteRow(n,group){
     let src=n.memo;   // legacy in-session URL
     if(!src && n.hasMemo){
       const rec=await idbGetMemo(n.id);
-      if(!rec){ toast('Memo missing from storage'); return; }
+      if(!rec){ toast('Memo not found'); return; }
       src=URL.createObjectURL(rec.blob);
     }
     memoPlayer=new Audio(src);
-    memoPlayer.play().catch(()=>toast('Could not play memo here'));
+    memoPlayer.play().catch(()=>toast('Can’t play this memo here'));
   };
   return d;
 }
@@ -2006,9 +1808,9 @@ function renderNotes(){
   const groups=noteGroups();
   let total=0,done=0;
   for(const g of groups){ total+=g.data.notes.length; done+=g.data.notes.filter(n=>n.done).length; }
-  $('noteCount').textContent=total?`${done}/${total} fixed`:'';
+  $('noteCount').textContent=total?`${done} of ${total} fixed`:'';
   if(!total){
-    list.innerHTML='<div class="emptyNotes">No notes yet. Press play, then <b>pause on your headphones</b> when something bugs you — the mic starts and pins a note 3 seconds back.</div>';
+    list.innerHTML='<p class="emptyNotes">Pause your headphones and talk.<br>The note lands 3 seconds back.</p>';
     return;
   }
   const multi=queue.length>1;
@@ -2035,25 +1837,25 @@ if('serviceWorker' in navigator){
 
 $('exportBtn').onclick=async()=>{
   const groups=noteGroups().filter(g=>g.data.notes.length);
-  if(!groups.length){toast('Nothing to export yet');return;}
+  if(!groups.length){toast('No notes yet');return;}
   let out=`noted 1.0\n${new Date().toLocaleDateString()}\n`;
   for(const g of groups){
     out+=`\n${g.track.name}\n`;
     for(const n of g.data.notes){
-      out+=`${fmt(n.t)}`;
+      out+=`${n.done?'✓ ':''}${fmt(n.t)}`;
       if(n.section) out+=` (${n.section})`;
       if(n.tags && n.tags.length) out+=` [${n.tags.join(', ')}]`;
-      out+=` ${n.done?'✓ ':''}— ${n.text||((n.memo||n.hasMemo)?'(voice memo)':'')}\n`;
+      out+=`: ${n.text||((n.memo||n.hasMemo)?'(voice memo)':'')}\n`;
     }
   }
   try{
     await navigator.clipboard.writeText(out);
-    toast('Copied — paste it next to your DAW');
+    toast('Notes copied for your DAW.');
   }catch(e){
     const ta=document.createElement('textarea');
     ta.value=out;document.body.appendChild(ta);
     ta.select();document.execCommand('copy');ta.remove();
-    toast('Copied to clipboard');
+    toast('Copied');
   }
 };
 </script>
@@ -2067,8 +1869,8 @@ $('exportBtn').onclick=async()=>{
   from that engine.
 
   Different expression: the field is sampled along a single horizontal
-  line and drawn as a waveform instead of a particle cloud, and green
-  pins drop onto it — which is literally what the product does to a
+  line and drawn as a waveform instead of a particle cloud, and ink
+  pins drop onto it, which is literally what the product does to a
   track. Landing only; nothing here touches the app.
 -->
 <script>
@@ -2078,10 +1880,9 @@ $('exportBtn').onclick=async()=>{
   const ctx=cv.getContext('2d');
   if(!ctx) return;
 
-  // Ink inverts for the dark ground: on the light house site it's near-black
-  // on green, here it's a cool silver on near-black. Same 8% fraction, but
-  // low-alpha white would read as holes punched in the waveform, not accents.
-  const GREEN='184,240,110', INK='214,231,226';
+  // Ink on chartreuse: bars and pins are the near-black ink. The 8% of
+  // bars the seed marks stay as texture, drawn at a lighter ink.
+  const INK='20,19,16';
   const BPM=110, BP=60/BPM, SP=0.80, C=2.0;
   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -2171,7 +1972,7 @@ $('exportBtn').onclick=async()=>{
     const beat=Math.floor(T/BP), mid=H*0.58, bw=W/N;
     const HMAX=H*0.40;              // hard ceiling — a downbeat can't blow a bar out
     ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='rgba('+INK+',.07)';
+    ctx.fillStyle='rgba('+INK+',.12)';
     ctx.fillRect(0,mid-0.5,W,1);
 
     const tops=new Float32Array(N);
@@ -2180,10 +1981,10 @@ $('exportBtn').onclick=async()=>{
       const ex=Math.max(0,Math.min(1,(Math.min(Math.abs(f),1.6)-0.04)/0.6));
       const h=Math.max(2,Math.min(HMAX,profile[i]*(0.55+ex*0.85)*(H*0.34)));
       tops[i]=mid-h;
-      // Resting alpha sits high enough that the brand chartreuse reads as
-      // chartreuse at rest; excitation adds on top rather than rescuing it.
-      const a=inkMask[i] ? .40+ex*.40 : .64+ex*.32;
-      ctx.fillStyle='rgba('+(inkMask[i]?INK:GREEN)+','+a.toFixed(3)+')';
+      // Resting ink is strong enough to read as a waveform at rest;
+      // excitation adds on top rather than rescuing it.
+      const a=inkMask[i] ? .30+ex*.30 : .72+ex*.28;
+      ctx.fillStyle='rgba('+INK+','+a.toFixed(3)+')';
       const w=Math.max(1,bw-1.4);
       ctx.fillRect(i*bw+(bw-w)/2, mid-h, w, h*2);
     }
@@ -2198,15 +1999,15 @@ $('exportBtn').onclick=async()=>{
       const al=Math.min(Math.min(1,age/0.12),Math.min(1,(pin.life-age)/0.9));
       const x=i*bw+bw/2;
 
-      ctx.fillStyle='rgba('+GREEN+','+(.26*al).toFixed(3)+')';
+      ctx.fillStyle='rgba('+INK+','+(.3*al).toFixed(3)+')';
       ctx.fillRect(x-0.5,y,1,Math.max(0,mid-y));
-      ctx.beginPath(); ctx.arc(x,y,3.1,0,6.2832);
-      ctx.fillStyle='rgba('+GREEN+','+(.95*al).toFixed(3)+')'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,3.4,0,6.2832);
+      ctx.fillStyle='rgba('+INK+','+al.toFixed(3)+')'; ctx.fill();
 
       if(landed && age-DROP<0.5){                // landing ring
         const k=(age-DROP)/0.5;
-        ctx.beginPath(); ctx.arc(x,y,3.1+k*13,0,6.2832);
-        ctx.strokeStyle='rgba('+GREEN+','+((1-k)*.45*al).toFixed(3)+')';
+        ctx.beginPath(); ctx.arc(x,y,3.4+k*13,0,6.2832);
+        ctx.strokeStyle='rgba('+INK+','+((1-k)*.5*al).toFixed(3)+')';
         ctx.lineWidth=1; ctx.stroke();
       }
       if(landed){                                // timecode blinks in, then holds
@@ -2216,9 +2017,9 @@ $('exportBtn').onclick=async()=>{
         // otherwise a taller neighbour swallows the label.
         let localTop=topY;
         for(let j=Math.max(0,i-4);j<=Math.min(N-1,i+4);j++) if(tops[j]<localTop) localTop=tops[j];
-        ctx.font='500 10px Inter,-apple-system,BlinkMacSystemFont,sans-serif';
+        ctx.font='600 12px "Bricolage Grotesque",-apple-system,BlinkMacSystemFont,sans-serif';
         ctx.textAlign='center';
-        ctx.fillStyle='rgba('+GREEN+','+(la*al).toFixed(3)+')';
+        ctx.fillStyle='rgba('+INK+','+(la*al).toFixed(3)+')';
         ctx.fillText(pin.label,Math.max(20,Math.min(W-20,x)),localTop-10);
       }
     }
@@ -2270,6 +2071,10 @@ $('exportBtn').onclick=async()=>{
     if(document.hidden) stop();
     else if(!reduce && cv.getBoundingClientRect().height>0) start();
   });
+  // Pin labels are canvas text: redraw a still frame once the face is in.
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(()=>{ if(!running && W) reduce?staticFrame():draw(SNAP); });
+  }
 })();
 </script>
 </body>

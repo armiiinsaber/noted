@@ -1,5 +1,10 @@
-const CACHE='noted-v8';
-const SHELL=['./','./index.html','./manifest.json','./icon.svg','./artwork.png'];
+const CACHE='noted-v9';
+const SHELL=[
+  './','./index.html','./manifest.json','./artwork.png',
+  './fonts/bricolage-grotesque.woff2',
+  './icon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png',
+  './favicon.svg','./favicon-32.png'
+];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
@@ -21,7 +26,7 @@ self.addEventListener('activate',e=>{
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET') return;
   const url=new URL(e.request.url);
-  // Only same-origin; let Google Fonts and other CDNs pass through normally
+  // Only same-origin; anything cross-origin passes through normally
   if(url.origin!==location.origin) return;
 
   e.respondWith(

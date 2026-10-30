@@ -22,7 +22,9 @@ Open the URL it prints. Note: the mic and MediaSession API both require HTTPS. L
 Open the URL on your iPhone in Safari → Share → **Add to Home Screen**. Allow mic access on the first pause. From then on, everything is headphone-only.
 
 ## Files
-- `index.html` — the entire app (single file, no dependencies)
+- `index.html`: the entire app (single file, no dependencies)
+- `fonts/`: Bricolage Grotesque, self-hosted, with its OFL licence
+- `manifest.json`, `sw.js`, icons and `artwork.png`: the installed app and its lock screen card
 - `CLAUDE.md` — project context Claude Code reads automatically
 - `CLAUDE-CODE-PROMPT.md` — full product spec
 - `NOTED-REBRAND.md` — historical: where the design tokens came from, plus the hosting plan. noted ships standalone now (no Labs numbering/attribution).
