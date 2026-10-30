@@ -83,7 +83,7 @@ async function audit(width, height, label) {
   await page.setInputFiles('#fileInput', [T('01 ride home v3.wav')]); await page.waitForFunction('qIndex===0 && dur>0 && notes.length===4');
   await page.waitForTimeout(300); await take('player, notes');
   await page.click('#exportBtn'); await page.waitForTimeout(100); await take('toast');
-  await page.locator('#noteList .note').nth(1).locator('.edit').click(); await page.waitForTimeout(200); await take('edit sheet');
+  await page.locator('#noteList .note').nth(1).locator('.txt').click(); await page.waitForTimeout(200); await take('edit sheet');
   await page.click('#cancelNote');
   await page.setInputFiles('#fileInput2', [T('02 chorus rework.wav'), T('03 night drive.wav'), T('04 outro idea.wav')]);
   await page.waitForFunction('queue.length===4'); await page.waitForTimeout(300);

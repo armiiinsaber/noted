@@ -1,9 +1,10 @@
-const CACHE='noted-v10';
+const CACHE='noted-v11';
 const SHELL=[
   './','./index.html','./manifest.json','./artwork.png',
   './fonts/bricolage-grotesque.woff2',
-  './icon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png',
-  './favicon.svg','./favicon-32.png'
+  './icon.svg','./icon-192.png','./icon-512.png','./icon-1024.png','./apple-touch-icon.png',
+  './favicon.svg','./favicon-32.png',
+  ...[96,128,192,256,384,512,1024,2048].map(s=>'./art/artwork-'+s+'.png')
 ];
 
 self.addEventListener('install',e=>{

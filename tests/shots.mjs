@@ -40,8 +40,12 @@ const SEED = {
     ],
   },
   [key('02 chorus rework.wav')]: {
-    markers: [],
-    notes: [{ id: 'm1', t: 61.0, text: 'Hats are harsh above 10k', tags: ['EQ'], done: false }],
+    markers: [{ t: 8, name: 'Verse' }, { t: 48, name: 'Chorus' }, { t: 108, name: 'Bridge' }],
+    notes: [
+      { id: 'm1', t: 22.4, text: 'Hats are harsh above 10k', tags: ['EQ'], section: 'Verse', done: false },
+      { id: 'm2', t: 61.0, text: 'Lead vocal needs a touch more air', tags: ['Vocals'], section: 'Chorus', done: true },
+      { id: 'm3', t: 114.8, text: 'Bass drops out under the bridge pad', tags: ['Low end', 'Arrangement'], section: 'Bridge', done: false },
+    ],
   },
 };
 
@@ -132,6 +136,30 @@ const tag = `${W}`;
   await ctx.close();
 }
 
+/* 2b. player playing, three notes, single track; 2c. playing, no notes */
+{
+  const { ctx, page } = await app();
+  await page.setInputFiles('#fileInput', [TRACKS[1]]);
+  await until(page, 'qIndex===0 && dur>100 && notes.length===3');
+  await page.click('#playBtn'); await until(page, 'isPlaying()');
+  await page.evaluate('seek(63.6)'); await until(page, 'peaks!==null', 15000);
+  await until(page, "$('toast').style.display!=='block'"); await page.waitForTimeout(400);
+  await page.screenshot({ path: tmp('p3') });
+  await frame(tmp('p3'), path.join(OUT, `2b-player-3-notes-${tag}.png`));
+  await ctx.close();
+}
+{
+  const { ctx, page } = await app();
+  await page.setInputFiles('#fileInput', [TRACKS[3]]);
+  await until(page, 'qIndex===0 && dur>60');
+  await page.click('#playBtn'); await until(page, 'isPlaying()');
+  await page.evaluate('seek(41.2)'); await until(page, 'peaks!==null', 15000);
+  await until(page, "$('toast').style.display!=='block'"); await page.waitForTimeout(400);
+  await page.screenshot({ path: tmp('p0') });
+  await frame(tmp('p0'), path.join(OUT, `2c-player-empty-${tag}.png`));
+  await ctx.close();
+}
+
 /* 4. notes list on a single track */
 {
   const { ctx, page } = await app();
@@ -144,7 +172,7 @@ const tag = `${W}`;
   await page.screenshot({ path: tmp('notes') });
   await frame(tmp('notes'), path.join(OUT, `4-notes-${tag}.png`));
   // extra, for review: the edit sheet and an empty track
-  await page.locator('#noteList .note').nth(1).locator('.edit').click();
+  await page.locator('#noteList .note').nth(1).locator('.txt').click();
   await page.waitForTimeout(250);
   await page.screenshot({ path: tmp('sheet') });
   await frame(tmp('sheet'), path.join(OUT, `x-edit-sheet-${tag}.png`));

@@ -20,7 +20,9 @@ Voice-first PWA for musicians taking timestamped mix notes while listening to a 
 - Buttons and text: sentence case, few borders, few uppercase labels, more air.
 - Copy: no em dashes, en dashes, or hyphens used as punctuation. Fewest words. Short plain sentences.
 - Every multi-line heading or paragraph has lines of roughly equal length (`text-wrap: balance` plus tuned measures). A short trailing line is a bug; check at 390px and 320px.
-- The session is one viewport (100dvh, body locked, safe areas respected); only the notes and queue lists scroll, and with a queue they share one region as tabs.
+- The session is one viewport (100dvh, body locked, safe areas respected); only the notes and queue lists scroll, and with a queue they share one panel as tabs.
+- The player is laid out by the golden ratio: usable height splits 0.382 (listening zone) / 0.618 (lower), and the lower zone splits by phi again (transport / panels). Spacing only from `--s1` to `--s7` (5, 8, 13, 21, 34, 55, 89px), type only from `--t1` to `--t5` (13, 21, 34, 55, 89px), sizes from the same set (play 89, transport 55, icon buttons 34). Zones are told apart by an ink wash, never by lines. Every tap target is at least 55px (small faces get a `::before` hit area). Screens under 600px tall step each size down one Fibonacci step.
+- Lock screen art: `art/artwork-{96..2048}.png`, each rendered at its own size by `tests/gen-assets.mjs`; the MediaSession artwork list carries all of them.
 - No eyebrow / product numbering above the wordmark; noted is standalone.
 - One bold element (the ink mic circle in the listening overlay / the Drop a note pill); everything else quiet.
 

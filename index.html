@@ -37,7 +37,12 @@
     --font:'Bricolage Grotesque',ui-sans-serif,-apple-system,BlinkMacSystemFont,sans-serif;
     --regular:400;
     --bold:600;
-    --side:20px;
+    /* The golden ratio runs the player: spacing from Fibonacci (--s1 to
+       --s7), type by 1.618 from 13px (--t1 to --t5). Nothing in between. */
+    --phi:1.618;
+    --s1:5px;--s2:8px;--s3:13px;--s4:21px;--s5:34px;--s6:55px;--s7:89px;
+    --t1:13px;--t2:21px;--t3:34px;--t4:55px;--t5:89px;
+    --side:var(--s4);
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html{height:100%;background:var(--ground)}
@@ -64,24 +69,16 @@
   .word{font-weight:var(--bold);letter-spacing:-.03em}
   .ver{font-weight:var(--regular);font-size:.46em;letter-spacing:0;margin-left:.35em}
 
-  /* ── session header ── */
+  /* ── session header: the lockup alone ── */
   header.bar{
-    display:none;flex:none;align-items:center;justify-content:space-between;gap:12px;
-    padding:max(clamp(8px,1.8dvh,14px),env(safe-area-inset-top)) var(--side) 4px;
+    display:none;flex:none;align-items:center;
+    padding:max(var(--s3),env(safe-area-inset-top)) var(--side) var(--s2);
   }
   body.in-session header.bar{display:flex}
-  header.bar .lockup{font-size:22px}
+  header.bar .lockup{font-size:var(--t2)}
   header.bar .mark{stroke-width:7.5}
-  .bar-end{display:flex;align-items:center;gap:16px;min-width:0}
-  .wakeBadge{display:none;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);white-space:nowrap}
-  .wakeBadge.on{display:inline-flex}
-  .wakeBadge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ink)}
-  @media (prefers-reduced-motion:no-preference){
-    .wakeBadge.on::before{animation:blip 2.4s ease-in-out infinite}
-  }
-  @media (max-width:360px){ .wakeBadge .wt{display:none} }
 
-  /* quiet actions: words, not boxes */
+  /* quiet actions: words, not boxes (landing and sheet) */
   .textBtn{
     position:relative;display:inline-flex;align-items:center;
     font-size:15px;color:var(--ink);padding:8px 0;cursor:pointer;white-space:nowrap;
@@ -90,7 +87,7 @@
   }
   .textBtn:hover{text-decoration-color:var(--ink)}
   .textBtn:active{opacity:.55}
-  .textBtn input,.pickBtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  .textBtn input,.pickBtn input,.tool input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
   /* ══════════ LANDING ══════════
      One confident first screen on an 8px scale. The session header is
@@ -156,57 +153,100 @@
   .lp-note{font-size:15px;line-height:1.55;color:var(--ink-2);max-width:21em}
 
   /* ══════════ SESSION ══════════
-     An installed app, not a page: the session is exactly one viewport.
-     Only the queue and the notes scroll, each inside its own box. */
+     An installed app, not a page: the session is exactly one viewport and
+     is divided by the golden ratio. Above the Drop a note button, the
+     usable height splits 0.382 / 0.618: the listening zone (track name,
+     timecode, waveform) and the lower zone. The lower zone splits by phi
+     again: the transport, then the panels (tools and notes). Every
+     margin, gap, padding, size and type step comes from --s* and --t*.
+     Zones are told apart by tone (an ink wash), never by lines. */
   #session{display:none}
   body.in-session{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden}
   body.in-session #session{flex:1 1 0;min-height:0}
   .player{height:100%;display:flex;flex-direction:column;padding:0 var(--side)}
-  .deck{flex:none;display:flex;flex-direction:column}
+  .zone{display:flex;flex-direction:column}
+  /* phi shares from a zero basis; a zone never shrinks below its own content */
+  .listen{flex:382 1 0}
+  .listen>*{flex:none}
+  .lower{flex:618 1 0;min-height:0;gap:var(--s3)}
+  .transportZone{flex:382 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s3)}
+  .panels{flex:618 1 0;min-height:0;display:flex;flex-direction:column;gap:var(--s3);padding-bottom:var(--s3)}
+  @media (max-height:700px){ .lower,.panels,.transportZone{gap:var(--s2)} .panels{padding-bottom:var(--s2)} .listHead{padding-top:var(--s2)} }
+  .panel{background:var(--wash);border-radius:var(--s4)}
+
+  /* listening zone */
   .trackName{
-    font-size:15px;color:var(--ink-2);text-align:center;margin-top:clamp(2px,1dvh,8px);
+    font-size:var(--t2);color:var(--ink-2);text-align:center;line-height:1.3;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .timecode{
-    font-size:min(16.5vw,8dvh,68px);letter-spacing:-.035em;line-height:1;
-    text-align:center;margin-top:clamp(2px,.8dvh,6px);user-select:none;-webkit-user-select:none;
+    font-size:var(--t4);letter-spacing:-.035em;line-height:1;
+    text-align:center;margin-top:var(--s1);user-select:none;-webkit-user-select:none;
   }
-  .nowLine{display:flex;justify-content:center;align-items:baseline;height:20px;margin-top:clamp(2px,1dvh,8px);font-size:14px;white-space:nowrap}
+  @media (min-width:390px) and (min-height:760px){ .timecode{font-size:var(--t5);letter-spacing:-.045em} }
+  .nowLine{display:flex;justify-content:center;align-items:baseline;height:var(--s4);margin-top:var(--s1);font-size:var(--t1);white-space:nowrap}
   .nowLine .total{color:var(--ink-2)}
   .sectionNow{font-weight:var(--bold);overflow:hidden;text-overflow:ellipsis;max-width:60%}
-  .sectionNow:not(:empty)::before{content:'·';font-weight:var(--regular);color:var(--ink-3);margin:0 8px}
-
-  #waveWrap{position:relative;height:clamp(40px,8dvh,76px);margin:clamp(10px,1.8dvh,14px) 0 23px}
+  .sectionNow:not(:empty)::before{content:'·';font-weight:var(--regular);color:var(--ink-3);margin:0 var(--s2)}
+  #waveWrap{position:relative;flex:1 1 var(--s5) !important;min-height:var(--s5);margin:var(--s3) 0 var(--s4)}
   #wave{width:100%;height:100%;display:block;touch-action:none}
   .pin{position:absolute;top:-8px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--ink);cursor:pointer}
   .pin.done{background:var(--ink-3)}
   .pin.flagged{background:var(--ground);box-shadow:inset 0 0 0 1.75px var(--ink)}
-  .markerFlag{position:absolute;bottom:-21px;transform:translateX(-50%);font-size:12px;color:var(--ink-2);white-space:nowrap}
+  .markerFlag{position:absolute;bottom:calc(-1 * var(--s4));transform:translateX(-50%);font-size:var(--t1);line-height:1.3;color:var(--ink-2);white-space:nowrap}
   .markerFlag.tight{visibility:hidden}
+  /* wake lock: a dot by the waveform, no words */
+  .wakeBadge{position:absolute;right:0;top:calc(-1 * var(--s3));width:var(--s1);height:var(--s1);border-radius:50%;background:var(--ink);display:none}
+  .wakeBadge.on{display:block}
+  @media (prefers-reduced-motion:no-preference){ .wakeBadge.on{animation:blip 2.4s ease-in-out infinite} }
 
-  .transport{display:flex;align-items:center;justify-content:center;gap:clamp(8px,4.5vw,22px)}
+  /* transport: play is the hero */
+  .transport{display:flex;align-items:center;justify-content:center;gap:var(--s3)}
   .transport:not(.multi) .skip{display:none}
-  .tBtn{width:clamp(42px,6.3dvh,50px);height:clamp(42px,6.3dvh,50px);border-radius:50%;display:grid;place-items:center;color:var(--ink);flex:none}
-  .tBtn:active{background:var(--wash)}
-  .tBtn .i{width:28px;height:28px}
-  .tBtn.skip{width:42px;height:42px;color:var(--ink-2)}
-  .tBtn.skip .i{width:22px;height:22px}
-  #playBtn{width:clamp(54px,8.8dvh,70px);height:clamp(54px,8.8dvh,70px);box-shadow:inset 0 0 0 1.75px var(--ink)}
-  #playBtn .i{width:30px;height:30px}
+  .tBtn{
+    width:var(--s6);height:var(--s6);border-radius:50%;display:grid;place-items:center;flex:none;
+    color:var(--ink);box-shadow:inset 0 0 0 1.75px var(--ink);
+    transition:transform .12s;
+  }
+  .tBtn .i{width:var(--s4);height:var(--s4)}
+  .tBtn.skip{box-shadow:inset 0 0 0 1.75px var(--ink-3)}
+  #playBtn{width:var(--s7);height:var(--s7);background:var(--ink);color:var(--ground);box-shadow:0 0 0 0 rgba(20,19,16,.25)}
+  #playBtn .i{width:var(--s5);height:var(--s5)}
   #playBtn .i-pause,#playBtn.is-playing .i-play{display:none}
   #playBtn.is-playing .i-pause{display:block}
+  @media (prefers-reduced-motion:no-preference){
+    #playBtn.is-playing{animation:beat 1.1s ease-out infinite}
+    @keyframes beat{0%{box-shadow:0 0 0 0 rgba(20,19,16,.25)}100%{box-shadow:0 0 0 var(--s3) rgba(20,19,16,0)}}
+  }
+  /* Five controls at 320px wide: the track skips keep a 55px hit area on a 34px face */
+  @media (max-width:359px){
+    .transport{gap:var(--s2)}
+    .tBtn.skip{width:var(--s5);height:var(--s5);position:relative}
+    .tBtn.skip::before{content:'';position:absolute;inset:calc((var(--s5) - var(--s6)) / 2)}
+    .tBtn.skip .i{width:var(--s3);height:var(--s3)}
+  }
+  .rateRow{display:inline-flex;padding:var(--s1);border-radius:var(--s4);background:var(--wash)}
+  .rateChip{font-size:var(--t1);line-height:1;color:var(--ink-2);padding:var(--s2) var(--s3);border-radius:var(--s3);min-width:var(--s6);transition:transform .12s,background .2s,color .2s}
+  .rateChip.on{color:var(--ground);background:var(--ink);font-weight:var(--bold)}
 
-  .tools{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:clamp(2px,1.2dvh,10px) 0 clamp(2px,1dvh,8px)}
-  .rateRow{display:flex;gap:2px;margin-left:-10px}
-  .rateChip{font-size:14px;color:var(--ink-2);padding:7px 10px;border-radius:999px}
-  .rateChip.on{color:var(--ink);background:var(--wash);font-weight:var(--bold)}
+  /* tools: three clear buttons on their own panel */
+  .tools{flex:none;display:flex;gap:var(--s1)}
+  .tool{
+    position:relative;flex:1;min-width:0;height:var(--s6);border-radius:var(--s4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s1);
+    font-size:var(--t1);line-height:1;color:var(--ink);cursor:pointer;white-space:nowrap;
+    transition:transform .12s,background .2s;
+  }
+  .tool .i{width:var(--s4);height:var(--s4)}
+  .tool:active{background:var(--wash)}
 
-  .lists{flex:1 1 0;min-height:0;display:flex;flex-direction:column;border-top:1px solid var(--line)}
-  .listHead{flex:none;display:flex;align-items:center;gap:10px;padding:10px 0 4px}
-  .tabs{display:flex;align-items:baseline;gap:20px;min-width:0}
-  .tab{display:inline-flex;align-items:baseline;gap:8px;padding:4px 0;white-space:nowrap}
-  .tab .tl{font-size:17px;letter-spacing:-.01em;color:var(--ink-2)}
-  .tab .count{font-size:14px;color:var(--ink-2)}
+  /* notes and queue: one panel, two tabs */
+  .lists{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 var(--s3)}
+  .listHead{flex:none;display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0 var(--s1)}
+  .tabs{display:flex;align-items:baseline;gap:var(--s4);min-width:0}
+  .tab{display:inline-flex;align-items:baseline;gap:var(--s2);padding:var(--s1) 0;white-space:nowrap;transition:transform .12s}
+  .tab .tl{font-size:var(--t2);line-height:1;letter-spacing:-.01em;color:var(--ink-2);transition:color .2s}
+  .tab .count{font-size:var(--t1);color:var(--ink-2)}
   .tab[aria-selected="true"] .tl{color:var(--ink);font-weight:var(--bold)}
   .tab[aria-selected="false"] .count{display:none}
   #queueTab{display:none}
@@ -215,69 +255,94 @@
   .lists:not(:has(#queueWrap.on)) .tab{pointer-events:none}
   .lists:not(:has(#queueWrap.on)) [data-tab="notes"] .tl{color:var(--ink);font-weight:var(--bold)}
   .lists:not(:has(#queueWrap.on)) [data-tab="notes"] .count{display:inline}
-  .listHead .textBtn{margin-left:auto;font-size:14px;padding:4px 0}
-  @media (max-width:359px){ #exportBtn .long{display:none} }
   #queueWrap{display:none}
   .lists[data-tab="queue"] #queueWrap.on{display:flex;flex-direction:column;flex:1 1 0;min-height:0}
   .lists[data-tab="queue"]:has(#queueWrap.on) .notesWrap{display:none}
   #queueList,#noteList{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   #queueList{flex:1 1 auto}
   .notesWrap{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
-  #noteList{flex:1 1 0;display:flex;flex-direction:column;padding-bottom:6px}
+  #noteList{flex:1 1 0;display:flex;flex-direction:column;padding-bottom:var(--s2)}
   #noteList>*{flex-shrink:0}
+  @media (prefers-reduced-motion:no-preference){
+    .lists[data-tab="queue"] #queueWrap.on,.lists[data-tab="notes"] .notesWrap{animation:paneIn .2s ease-out}
+    @keyframes paneIn{from{opacity:0;transform:translateY(var(--s1))}to{opacity:1;transform:none}}
+  }
 
-  .qItem{display:flex;align-items:center;gap:12px;padding:9px 0;cursor:pointer}
-  .qItem .qNum{font-size:13px;color:var(--ink-2);width:20px;flex-shrink:0}
-  .qItem .qName{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .qItem .qMeta{font-size:13px;color:var(--ink-2);flex-shrink:0}
-  .qItem .qDel{width:30px;height:30px;margin:-6px -7px -6px 0;display:grid;place-items:center;color:var(--ink-2);flex-shrink:0}
-  .qItem .qDel .i{width:16px;height:16px}
+  .qItem{display:flex;align-items:center;gap:var(--s3);min-height:var(--s6);padding:var(--s1) 0;cursor:pointer}
+  .qItem .qNum{font-size:var(--t1);color:var(--ink-2);width:var(--s4);flex-shrink:0}
+  .qItem .qName{flex:1;min-width:0;font-size:var(--t2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qItem .qMeta{font-size:var(--t1);color:var(--ink-2);flex-shrink:0}
+  .qItem .qDel{width:var(--s5);height:var(--s5);display:grid;place-items:center;color:var(--ink-2);flex-shrink:0;position:relative;transition:transform .12s}
+  .qItem .qDel::before{content:'';position:absolute;inset:calc((var(--s5) - var(--s6)) / 2)}
+  .qItem .qDel .i{width:var(--s4);height:var(--s4)}
   .qItem.on .qNum{color:var(--ink)}
   .qItem.on .qName{font-weight:var(--bold)}
   .qItem.missing .qName{color:var(--ink-3)}
 
-  .trackGroup{display:flex;align-items:baseline;gap:10px;margin:12px 0 0;font-size:13px;color:var(--ink-2)}
+  .trackGroup{display:flex;align-items:baseline;gap:var(--s2);margin-top:var(--s2);font-size:var(--t1);color:var(--ink-2)}
   .trackGroup .tgName{flex:1;min-width:0;font-weight:var(--bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .trackGroup.on{color:var(--ink)}
-  .note{display:flex;gap:10px;align-items:flex-start;padding:11px 0}
-  .note+.note{border-top:1px solid var(--line)}
+  /* a note row: 55px, timestamp in bold, the icons in one column at the right */
+  /* a note row: 89px, tap it to edit; the check stays on the row */
+  .note{display:flex;gap:var(--s3);align-items:center;min-height:var(--s7);padding:var(--s1) 0;cursor:pointer;border-radius:var(--s3);transition:background .2s}
+  .note:active{background:var(--wash)}
   .note.done{opacity:.45}
   .checkBtn{
-    flex:none;width:26px;height:26px;border-radius:50%;margin-top:-2px;
+    flex:none;width:var(--s5);height:var(--s5);border-radius:50%;position:relative;
     display:grid;place-items:center;color:transparent;box-shadow:inset 0 0 0 1.75px var(--ink);
+    transition:transform .12s,background .2s;
   }
-  .checkBtn .i{width:15px;height:15px;stroke-width:2.4}
+  .checkBtn::before{content:'';position:absolute;inset:calc((var(--s5) - var(--s6)) / 2)}
+  .checkBtn .i{width:var(--s4);height:var(--s4);stroke-width:2.4}
   .note.done .checkBtn{background:var(--ink);color:var(--ground)}
-  .note .ts{flex:none;min-width:38px;text-align:left;font-size:15px;font-weight:var(--bold);color:var(--ink);padding:1px 0}
-  .note .body{flex:1;min-width:0;padding-top:1px}
-  .note .meta{display:flex;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-bottom:1px}
-  .note .meta>*+*::before{content:'·';margin:0 7px;color:var(--ink-3)}
-  .note .txt{font-size:16px;line-height:1.4;overflow-wrap:anywhere}
-  .note .memoBtn{
-    margin-top:6px;display:inline-flex;align-items:center;gap:6px;
-    font-size:14px;font-weight:var(--bold);padding:6px 13px 6px 9px;border-radius:999px;background:var(--wash);
+  .note .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--s1)}
+  .note .head{display:flex;align-items:baseline;gap:var(--s2);font-size:var(--t1);line-height:1;white-space:nowrap;overflow:hidden}
+  .note .ts{flex:none;font-weight:var(--bold);color:var(--ink);padding:0;text-align:left;line-height:1}
+  .note .meta{display:flex;min-width:0;overflow:hidden;color:var(--ink-2)}
+  .note .meta>*{white-space:nowrap}
+  .note .meta>*+*::before{content:'·';margin:0 var(--s1);color:var(--ink-3)}
+  .note .txt{
+    font-size:var(--t2);line-height:1.3;overflow-wrap:anywhere;text-wrap:balance;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
-  .note .memoBtn .i{width:14px;height:14px}
-  .note .ctrl{flex:none;display:flex;flex-direction:column;margin:-6px -8px -6px 0}
-  .iconBtn{width:34px;height:30px;display:grid;place-items:center;color:var(--ink-2)}
-  .iconBtn .i{width:18px;height:18px}
-  .iconBtn:active{color:var(--ink)}
-  .note.flagged .ts,.note.flagged .txt{color:var(--ink-2)}
+  .note .memoBtn{
+    align-self:flex-start;display:inline-flex;align-items:center;gap:var(--s1);
+    font-size:var(--t1);line-height:1;font-weight:var(--bold);padding:var(--s2) var(--s3) var(--s2) var(--s2);border-radius:var(--s3);background:var(--wash);
+    transition:transform .12s;
+  }
+  .note .memoBtn .i{width:var(--s3);height:var(--s3)}
+  .note.flagged .txt{color:var(--ink-2)}
   .note.flagged .tag{color:var(--ink);font-weight:var(--bold)}
-  .emptyNotes{margin:auto;padding:16px 0 24px;max-width:22em;text-align:center;font-size:16px;line-height:1.45;color:var(--ink-2)}
+  .emptyNotes{margin:auto;padding:var(--s2) 0 var(--s3);max-width:22em;text-align:center;font-size:var(--t1);line-height:1.45;color:var(--ink-2)}
+  @media (max-height:600px){ .emptyNotes{padding:var(--s1) 0} .emptyNotes .l2{display:none} }
+
+  /* every control presses in */
+  .tBtn:active,.tool:active,.tab:active,.rateChip:active,.checkBtn:active,.qDel:active,.memoBtn:active,#noteBtn:active{transform:scale(.96)}
+  @media (prefers-reduced-motion:reduce){ .tBtn,.tool,.tab,.rateChip,.checkBtn,.qDel,.memoBtn,#noteBtn{transition:none} }
+  /* Very short screens (320 by 568 class): every size steps down one
+     Fibonacci step so a note row stays visible; hit areas stay 55px. */
+  @media (max-height:600px){
+    .timecode{font-size:var(--t3);letter-spacing:-.03em}
+    #playBtn{width:var(--s6);height:var(--s6)}
+    #playBtn .i{width:var(--s4);height:var(--s4)}
+    .tBtn{width:var(--s5);height:var(--s5);position:relative}
+    .tBtn::before{content:'';position:absolute;inset:calc((var(--s5) - var(--s6)) / 2)}
+    .tBtn .i{width:var(--s3);height:var(--s3)}
+    #playBtn::before{content:none}
+    .rateChip{padding:var(--s1) var(--s2);min-width:var(--s5)}
+  }
 
   /* The one bold element */
   #noteBtn{
-    display:none;flex:none;align-self:center;align-items:center;justify-content:center;gap:12px;
-    width:min(420px,calc(100% - 2 * var(--side)));height:clamp(50px,7.3dvh,58px);
-    margin:clamp(6px,1dvh,8px) 0 max(16px,calc(env(safe-area-inset-bottom) + 4px));
-    background:var(--ink);color:var(--ground);border-radius:999px;
-    font-size:17px;font-weight:var(--bold);
+    display:none;flex:none;align-self:center;align-items:center;justify-content:center;gap:var(--s3);
+    width:min(420px,calc(100% - 2 * var(--side)));height:var(--s6);
+    margin:0 0 max(var(--s3),calc(env(safe-area-inset-bottom) + var(--s1)));
+    background:var(--ink);color:var(--ground);border-radius:var(--s6);
+    font-size:var(--t2);font-weight:var(--bold);
     box-shadow:0 12px 24px -12px rgba(20,19,16,.5);
-    transition:transform .15s;
+    transition:transform .12s;
   }
-  #noteBtn:active{transform:scale(.98)}
-  #noteBtn .dot{width:9px;height:9px;border-radius:50%;background:var(--ground)}
+  #noteBtn .dot{width:var(--s2);height:var(--s2);border-radius:50%;background:var(--ground)}
   @media (prefers-reduced-motion:no-preference){
     #noteBtn.playing .dot{animation:blink 1.1s steps(2,start) infinite}
     @keyframes blink{to{visibility:hidden}}
@@ -346,7 +411,7 @@
   #noteText::placeholder{color:var(--ink-3)}
   .sheetActions{display:flex;gap:10px}
   .sheetActions button{padding:15px;border-radius:999px;font-size:16px;font-weight:var(--bold)}
-  .sheetActions .cancel{flex:1;background:var(--wash)}
+  .sheetActions .cancel,.sheetActions .delete{flex:1;background:var(--wash)}
   .sheetActions .save{flex:2;background:var(--ink);color:var(--ground)}
 
   /* ── diagnostics (triple tap the timecode) ── */
@@ -389,15 +454,14 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7.4"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M15.2 4.8l4 4L9 19H5v-4z"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4.5M6 4.5h11.5l-2.6 4 2.6 4H6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2.8" width="6" height="11.4" rx="3"/><path d="M5.6 11a6.4 6.4 0 0 0 12.8 0M12 17.4v3.8"/></symbol>
 </svg>
 
 <header class="bar">
   <div class="lockup" aria-label="noted 1.0"><svg class="mark" viewBox="0 0 94 58" aria-hidden="true"><use href="#mark-compact"/></svg><span class="word">noted<span class="ver">1.0</span></span></div>
-  <div class="bar-end">
-    <div class="wakeBadge" id="wakeBadge"><span class="wt">Screen on</span></div>
-    <label class="textBtn">Add tracks<input type="file" id="fileInput2" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
-  </div>
 </header>
 
 <div id="emptyState">
@@ -502,41 +566,49 @@
 
 <div id="session">
   <div class="player">
-    <div class="deck">
+    <section class="zone listen" aria-label="Now playing">
       <div class="trackName" id="trackName"></div>
       <div class="timecode"><span id="tcNow">0:00.0</span></div>
       <div class="nowLine"><span class="total" id="tcTotal">/ 0:00</span><span class="sectionNow" id="sectionNow"></span></div>
-      <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div></div>
+      <div id="waveWrap"><canvas id="wave"></canvas><div id="pinLayer"></div><span class="wakeBadge" id="wakeBadge" role="img" aria-label="Screen staying on"></span></div>
+    </section>
 
-      <div class="transport" id="transport">
-        <button class="tBtn skip" id="prevBtn" aria-label="Previous track"><svg class="i"><use href="#i-prev"/></svg></button>
-        <button class="tBtn" id="back10" aria-label="Back 10 seconds"><svg class="i"><use href="#i-back10"/></svg></button>
-        <button class="tBtn" id="playBtn" aria-label="Play"><svg class="i i-play"><use href="#i-play"/></svg><svg class="i i-pause"><use href="#i-pause"/></svg></button>
-        <button class="tBtn" id="fwd10" aria-label="Forward 10 seconds"><svg class="i"><use href="#i-fwd10"/></svg></button>
-        <button class="tBtn skip" id="nextBtn" aria-label="Next track"><svg class="i"><use href="#i-next"/></svg></button>
-      </div>
-      <div class="tools">
-        <div class="rateRow">
+    <section class="zone lower">
+      <div class="transportZone">
+        <div class="transport" id="transport">
+          <button class="tBtn skip" id="prevBtn" aria-label="Previous track"><svg class="i"><use href="#i-prev"/></svg></button>
+          <button class="tBtn" id="back10" aria-label="Back 10 seconds"><svg class="i"><use href="#i-back10"/></svg></button>
+          <button class="tBtn" id="playBtn" aria-label="Play"><svg class="i i-play"><use href="#i-play"/></svg><svg class="i i-pause"><use href="#i-pause"/></svg></button>
+          <button class="tBtn" id="fwd10" aria-label="Forward 10 seconds"><svg class="i"><use href="#i-fwd10"/></svg></button>
+          <button class="tBtn skip" id="nextBtn" aria-label="Next track"><svg class="i"><use href="#i-next"/></svg></button>
+        </div>
+        <div class="rateRow" role="group" aria-label="Speed">
           <button class="rateChip" data-rate="0.75">0.75×</button>
           <button class="rateChip on" data-rate="1">1×</button>
           <button class="rateChip" data-rate="1.25">1.25×</button>
         </div>
-        <button class="textBtn" id="markerBtn">Mark section</button>
       </div>
-    </div>
 
-    <!-- With a queue, Notes and Queue take turns in one scroll region -->
-    <div class="lists" data-tab="notes">
-      <div class="listHead">
-        <div class="tabs" role="tablist">
-          <button class="tab" data-tab="notes" role="tab" aria-selected="true"><span class="tl">Notes</span><span class="count" id="noteCount"></span></button>
-          <button class="tab" data-tab="queue" role="tab" aria-selected="false" id="queueTab"><span class="tl">Queue</span><span class="count" id="queueCount"></span></button>
+      <div class="panels">
+        <div class="tools panel">
+          <button class="tool" id="markerBtn"><svg class="i"><use href="#i-flag"/></svg><span>Mark section</span></button>
+          <label class="tool"><svg class="i"><use href="#i-plus"/></svg><span>Add tracks</span><input type="file" id="fileInput2" multiple accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.aiff,.aif,.ogg"></label>
+          <button class="tool" id="exportBtn"><svg class="i"><use href="#i-copy"/></svg><span>Copy notes</span></button>
         </div>
-        <button class="textBtn" id="exportBtn">Copy<span class="long">&nbsp;notes</span></button>
+
+        <!-- With a queue, Notes and Queue take turns in one scroll region -->
+        <div class="lists panel" data-tab="notes">
+          <div class="listHead">
+            <div class="tabs" role="tablist">
+              <button class="tab" data-tab="notes" role="tab" aria-selected="true"><span class="tl">Notes</span><span class="count" id="noteCount"></span></button>
+              <button class="tab" data-tab="queue" role="tab" aria-selected="false" id="queueTab"><span class="tl">Queue</span><span class="count" id="queueCount"></span></button>
+            </div>
+          </div>
+          <div id="queueWrap"><div id="queueList"></div></div>
+          <div class="notesWrap"><div id="noteList"></div></div>
+        </div>
       </div>
-      <div id="queueWrap"><div id="queueList"></div></div>
-      <div class="notesWrap"><div id="noteList"></div></div>
-    </div>
+    </section>
   </div>
 </div>
 
@@ -565,6 +637,7 @@
   <textarea id="noteText" placeholder="Your note"></textarea>
   <div class="sheetActions">
     <button class="cancel" id="cancelNote">Cancel</button>
+    <button class="delete" id="deleteNote">Delete</button>
     <button class="save" id="saveNote">Save</button>
   </div>
 </div>
@@ -885,7 +958,12 @@ function uiPlayState(){
    3. When seekbackward/seekforward are registered, the lock screen shows
       ±10s buttons INSTEAD of track skips. With a queue, next/prev must
       win, so the seek handlers are only registered for a single track. */
-const ARTWORK=[{src:new URL('artwork.png',location.href).href,sizes:'512x512',type:'image/png'}];
+/* The card's art at every size iOS may ask for, each a real PNG rendered
+   at that size (tests/gen-assets.mjs), so the largest is picked and
+   nothing is upscaled. */
+const ARTWORK=[96,128,192,256,384,512,1024,2048].map(s=>({
+  src:new URL('art/artwork-'+s+'.png',location.href).href,sizes:s+'x'+s,type:'image/png'
+}));
 function setupMediaSessionHandlers(){
   if(!('mediaSession' in navigator))return;
   const set=(a,h)=>{ try{ navigator.mediaSession.setActionHandler(a,h); }catch(e){} };
@@ -1630,6 +1708,7 @@ $('noteBtn').onclick=()=>{
 };
 
 /* ================= EDIT SHEET (existing notes only) ================= */
+let sheetDelete=null;   // set by the row that opened the sheet
 function buildTagRow(){
   const row=$('tagRow');row.innerHTML='';
   for(const t of TAGS){
@@ -1656,7 +1735,9 @@ function closeSheet(){
   $('sheetBack').style.display='none';
   $('sheet').style.display='none';
   editingId=null;
+  sheetDelete=null;
 }
+$('deleteNote').onclick=()=>{ const f=sheetDelete; closeSheet(); if(f) f(); };
 $('tsMinus').onclick=()=>{sheetTs=Math.max(0,sheetTs-1);$('sheetTime').textContent=fmt(sheetTs);};
 $('tsPlus').onclick=()=>{sheetTs=Math.min(dur||sheetTs+1,sheetTs+1);$('sheetTime').textContent=fmt(sheetTs);};
 $('cancelNote').onclick=closeSheet;
@@ -1743,15 +1824,10 @@ function noteRow(n,group){
   const hasMemo=n.hasMemo||n.memo;   // n.memo kept for backward-compat with pre-IDB notes
   d.innerHTML=`
     <button class="checkBtn" aria-label="Mark fixed"><svg class="i"><use href="#i-check"/></svg></button>
-    <button class="ts">${fmt(n.t)}</button>
     <div class="body">
-      ${meta?`<div class="meta">${meta}</div>`:''}
+      <div class="head"><button class="ts">${fmt(n.t)}</button>${meta?`<span class="meta">${meta}</span>`:''}</div>
       ${n.text?`<div class="txt"></div>`:''}
       ${hasMemo?`<button class="memoBtn"><svg class="i"><use href="#i-play"/></svg>Memo</button>`:''}
-    </div>
-    <div class="ctrl">
-      <button class="iconBtn edit" aria-label="Edit note"><svg class="i"><use href="#i-edit"/></svg></button>
-      <button class="iconBtn del" aria-label="Delete note"><svg class="i"><use href="#i-x"/></svg></button>
     </div>`;
   if(n.text) d.querySelector('.txt').textContent=n.text;
 
@@ -1762,27 +1838,31 @@ function noteRow(n,group){
     renderQueue();renderNotes();layoutPins();
   };
 
-  d.querySelector('.ts').onclick=async()=>{
+  d.querySelector('.ts').onclick=async e=>{
+    e.stopPropagation();
     if(!isCurrent()) await loadTrack(group.index,{autoplay:false});
     seek(Math.max(0,n.t-1));
     if(!isPlaying()) play();
   };
-  d.querySelector('.checkBtn').onclick=()=>{ n.done=!n.done; saveGroup(); };
-  d.querySelector('.edit').onclick=async()=>{
-    // Editing needs the track's own markers for section lookup — switch first.
-    if(!isCurrent()) await loadTrack(group.index,{autoplay:false});
-    openSheet(n);
-  };
-  d.querySelector('.del').onclick=()=>{
+  d.querySelector('.checkBtn').onclick=e=>{ e.stopPropagation(); n.done=!n.done; saveGroup(); };
+  const del=()=>{
     idbDelMemo(n.id);
-    // splice, not filter — `notes` and notesByTrack[key] are the same array
+    // splice, not filter: `notes` and notesByTrack[key] are the same array
     // for the current track, and rebinding would silently desync them.
     const i=group.data.notes.findIndex(x=>x.id===n.id);
     if(i>-1) group.data.notes.splice(i,1);
     saveGroup();
   };
+  // The row is the edit affordance; Delete waits inside the sheet.
+  d.onclick=async()=>{
+    // Editing needs the track's own markers for section lookup: switch first.
+    if(!isCurrent()) await loadTrack(group.index,{autoplay:false});
+    sheetDelete=del;
+    openSheet(n);
+  };
   const mb=d.querySelector('.memoBtn');
-  if(mb) mb.onclick=async()=>{
+  if(mb) mb.onclick=async e=>{
+    e.stopPropagation();
     pauseAudio();
     if(memoPlayer){memoPlayer.pause();memoPlayer=null;}
     let src=n.memo;   // legacy in-session URL
@@ -1808,9 +1888,9 @@ function renderNotes(){
   const groups=noteGroups();
   let total=0,done=0;
   for(const g of groups){ total+=g.data.notes.length; done+=g.data.notes.filter(n=>n.done).length; }
-  $('noteCount').textContent=total?`${done} of ${total} fixed`:'';
+  $('noteCount').textContent=total?(done?`${done} of ${total}`:String(total)):'';
   if(!total){
-    list.innerHTML='<p class="emptyNotes">Pause your headphones and talk.<br>The note lands 3 seconds back.</p>';
+    list.innerHTML='<p class="emptyNotes"><span class="l1">Pause your headphones and talk.</span><br><span class="l2">The note lands 3 seconds back.</span></p>';
     return;
   }
   const multi=queue.length>1;

@@ -265,8 +265,8 @@ async function core() {
 
   i = await noteByText(page, 'snare too dry');
   const tBefore = await ev(page, "notes.find(n=>n.text==='snare too dry').t");
-  await page.locator('#noteList .note').nth(i).locator('.edit').click();
-  check('edit sheet opens for a saved note', await shown(page, '#sheet'));
+  await page.locator('#noteList .note').nth(i).locator('.txt').click();
+  check('tapping a note row opens the edit sheet', await shown(page, '#sheet'));
   await page.click('#tsPlus');
   await page.fill('#noteText', 'snare edited');
   await page.click('#saveNote');
@@ -274,8 +274,9 @@ async function core() {
 
   const before = await ev(page, 'notes.length');
   i = await noteByText(page, 'snare edited');
-  await page.locator('#noteList .note').nth(i).locator('.del').click();
-  check('delete removes and persists', await ev(page, `notes.length===${before - 1} && JSON.parse(localStorage.getItem(trackKey('A mix.wav'))).notes.length===${before - 1}`));
+  await page.locator('#noteList .note').nth(i).locator('.txt').click();
+  await page.click('#deleteNote');
+  check('delete from the sheet removes and persists', await ev(page, `notes.length===${before - 1} && JSON.parse(localStorage.getItem(trackKey('A mix.wav'))).notes.length===${before - 1}`));
 
   await page.click('#exportBtn');
   check('export copies track, timecode and text', await until(page, "__clip.length>0 && __clip.at(-1).includes('A mix.wav') && __clip.at(-1).includes('kick is too loud') && /\\d:\\d\\d/.test(__clip.at(-1))"));
@@ -330,10 +331,13 @@ async function mediasession() {
   check('single track: play/pause/seek handlers set, skips cleared',
     await ev(page, "['play','pause','seekbackward','seekforward'].every(a=>typeof __ms.handlers[a]==='function') && !__ms.handlers.nexttrack && !__ms.handlers.previoustrack"));
   check('metadata: title, artist, empty album', await ev(page, "__ms.lastMeta.title==='B mix.wav' && __ms.lastMeta.artist==='noted 1.0' && __ms.lastMeta.album===''"));
-  check('artwork is a static 512 PNG URL', await ev(page, "(a=>a && /\\/artwork\\.png$/.test(a.src) && a.sizes==='512x512' && a.type==='image/png')(__ms.lastMeta.artwork[0])"));
-  check('artwork.png serves a 512x512 PNG', await page.evaluate(async () => {
-    const r = await fetch('artwork.png'); const b = new DataView(await r.arrayBuffer());
-    return r.ok && b.getUint32(0) === 0x89504e47 && b.getUint32(16) === 512 && b.getUint32(20) === 512; }));
+  check('artwork set runs 96 to 2048, PNG, largest last', await ev(page, "(a=>a.length===8 && a[0].sizes==='96x96' && a.at(-1).sizes==='2048x2048' && a.every(x=>x.type==='image/png' && /\\/art\\/artwork-\\d+\\.png$/.test(x.src)))(__ms.lastMeta.artwork)"));
+  check('every artwork file is a real PNG at its stated size', await page.evaluate(async () => {
+    for (const a of __ms.lastMeta.artwork) {
+      const n = +a.sizes.split('x')[0]; const r = await fetch(a.src); if (!r.ok) return false;
+      const b = new DataView(await r.arrayBuffer());
+      if (b.getUint32(0) !== 0x89504e47 || b.getUint32(16) !== n || b.getUint32(20) !== n) return false;
+    } return true; }));
   await page.click('#playBtn'); await until(page, 'isPlaying()');
   check('playbackState playing', await until(page, "navigator.mediaSession.playbackState==='playing'"));
   check('position state carries the duration', await ev(page, '__ms.positions.some(p=>Math.abs(p.duration-dur)<0.01)'));
