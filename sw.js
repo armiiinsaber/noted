@@ -1,4 +1,4 @@
-const CACHE='noted-v9';
+const CACHE='noted-v10';
 const SHELL=[
   './','./index.html','./manifest.json','./artwork.png',
   './fonts/bricolage-grotesque.woff2',
