@@ -24,5 +24,8 @@ Voice-first PWA for musicians taking timestamped mix notes while listening to a 
 - No eyebrow / product numbering above the wordmark; noted is standalone.
 - One bold element (the ink mic circle in the listening overlay / the Drop a note pill); everything else quiet.
 
+## Tests
+`tests/` holds the regression suite (108 checks: pause-to-talk, memo fallback, MediaSession, the 20-track queue, the resume deadlock) plus the layout audit, screenshot and icon scripts. The site never loads anything from it. From `tests/`: run `npm install` once, then `npm test`. It needs Google Chrome installed and must stay at 108/108 after every change. `npm run audit` checks balanced lines at 390/375/320px and the one-viewport fit in WebKit (`npx playwright-core install webkit` if it is missing). `npm run shots` writes review screenshots to `.tools/shots/`, which is gitignored. To compare with an older version, pass its folder: `node regress.mjs <dir>`.
+
 ## Definition of done
 Deployed to `notedbymm.com` over HTTPS, installed to home screen, where pressing **pause on the headphone remote** immediately starts recognition and pressing **play** saves the transcript pinned to the moment before pause.

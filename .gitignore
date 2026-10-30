@@ -1,3 +1,4 @@
 .tools/
 .brand/
 .claude/
+node_modules/
